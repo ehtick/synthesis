@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Synthesis.ModelManager;
@@ -7,40 +8,27 @@ using System.Linq;
 using Synthesis.UI.Bars;
 using Newtonsoft.Json;
 
-public class MyTest : MonoBehaviour
-{
-    [SerializeField]
-    public float HighlightTime;
-
-    [SerializeField]
-    public Bar currentBar;
-
-    [SerializeField]
-    public GameObject configGearboxPanel;
-
-    private Model Robot;
-    private float lastUpdate = 0;
-    private int index = 0;
-
-    private void Start()
-    {
-        ModelManager.OnModelSpawned += m => { Robot = m; Debug.Log($"Model \"{m.Name}\" Spawned"); };
-
-        // Configure Gearboxes Test
-        // currentBar.OpenPanel(configGearboxPanel);
-
-        // Test Serializing GearboxData
-        /*GearboxData data = new GearboxData() { Name = "test1", MotorUuids = new string[] { "0a00", "0a01" }, MaxSpeed = 50, Torque = 2.1f };
-        string a = JsonConvert.SerializeObject(data);
-        Debug.Log(a);
-        var deserialize = JsonConvert.DeserializeObject<GearboxData>(a);*/
-        // Debug.Log("How'd it go?");
+public class MyTest : MonoBehaviour {
+    public Transform ExampleTransform;
+    
+    public void Start() {
+        var m1 = Matrix4x4.TRS(new Vector3(1, 5, 3), Quaternion.Euler(0, 45, 0), Vector3.one);
+        var m2 = Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(30, 0, 0), Vector3.one);
+        var m3 = m1 * m2;
+        PrintMatrix4x4(m1 * m2);
+        ExampleTransform.localPosition = new Vector3(m3.m30, m3.m31, m3.m32);
+        ExampleTransform.rotation = m3.rotation;
+        ExampleTransform.localScale = m3.lossyScale;
     }
 
-    public void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.Mouse0)) {
-            
+    public void PrintMatrix4x4(Matrix4x4 m) {
+        string a = "";
+        for (int y = 0; y < 4; y++) {
+            for (int x = 0; x < 4; x++) {
+                a += $"{Math.Round(m[y, x], 3)},";
+            }
+            a += "\n";
         }
+        Debug.Log(a);
     }
 }

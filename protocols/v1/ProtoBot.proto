@@ -8,49 +8,64 @@ enum DynamicType {
     GAMEPIECE = 2;
 }
 
-message ProtoAssembly {
-    DynamicType type = 1;
-    SimObject simObject = 2;
+message Assembly {
+    oneof File {
+        DynamicStatic field = 1;
+    }
 }
 
-message SimObject {
+message DynamicStatic {
     string name = 1;
-    string serializerSignature = 2;
-    map<string, Node> nodeRefMap = 3;
-    map<string, Occurrence> occurrenceMap = 6;
-    map<string, Component> componentRefMap = 7;
-    map<string, Joint> jointRefMap = 8;
-    map<string, Material> materialRefMap = 9;
+    AssemblyData assemblyData = 2;
+    bool static = 3;
+    map<string, string> userData = 4;
 }
 
-message Node {
-    repeated string occurrences = 1; // Occurrences shouldn't be stored more than once in all given nodes so this is a bit redundant
-    repeated string joints = 2;
+message AssemblyData {
+    // occurrenceMap["Size 4 Joint:2"] = Occurrence
+    // occurrenceMap["Size 4 Joint:1"] = Occurrence
+    map<string, Occurrence> occurrenceMap = 1;
 
-    bool isRoot = 3;
-    bool isStatic = 4;
+    // occurrenceMap["Size 4 Joint"] = Component
+    map<string, Component> componentMap = 2;
 
-    Spatial transform = 5;
+    // jointMap["Rev1"] = Joint
+    map<string, Joint> jointMap = 3;
+
+    // materialMap[""]
+    map<string, Material> materialMap = 4;
 }
 
-//
-// Occurrences
-// 
-// Occurrences exist once within all given nodes
-//
 message Occurrence {
     string name = 1;
+    string GUID = 7;
+    string parent = 9;
+
+
+    // ["Size 4 Joint"]
+    // componentMap["Size 4 Joint"] = Component
     string componentRef = 2;
 
-    string GUID = 5;
-    string parentGUID = 6;
-    repeated string children = 7;
-
     Spatial transform = 3;
+    
+    // string material = 4;
+
+    bool isGrounded = 4;
+    bool static = 6;
+    
+    // ["Rev1", "Rev2", ...]
+    // jointMap["Rev1"] = Joint
+    // jointMap["Rev2"] = Joint
+    repeated string joints = 5;
+
+    repeated string children = 8;
 }
 
 message Component {
-    Spatial transform = 3;
+    string name = 5;
+    string GUID = 1;
+
+    Spatial transform = 3; // this might not exist
     PhysProps physicalProperties = 4;
 
     repeated Body bodies = 2;
@@ -72,23 +87,26 @@ message Joint {
 
     JointMotor motor = 12;
     
-    string node1 = 13;
-    string node2 = 14;
+    string occurrence1 = 13;
+    string occurrence2 = 14;
 }
 
 message Body {
     string GUID = 1;
-    oneof Mesh {
-        UniqueMesh uniqueMesh = 6;
-        Sphere sphereMesh = 7;
-    }
+    string name = 6;
+    string material = 2;
+    Mesh visualMesh = 3;
+    // Legacy_Mesh legacyMeshData = 4; // Get rid of I think?
     Spatial transform = 5;
 }
 
-message UniqueMesh {
+message Mesh {
     repeated Vec3 vertices = 1;
     repeated int32 triangles = 2;
-    repeated SubMeshDefinition subMeshes = 3;
+}
+
+message Legacy_Mesh {
+    repeated Sphere sphereColliders = 12;
 }
 
 message Sphere {
@@ -127,12 +145,6 @@ message PhysProps {
     float staticFriction = 5;
 }
 
-message SubMeshDefinition {
-    int32 start = 1;
-    int32 count = 2;
-    string material = 3;
-}
-
 message Material {
     int32 red = 1;
     int32 green = 2;
@@ -140,6 +152,10 @@ message Material {
     int32 alpha = 4;
     float specular = 5;
     bool emissive = 6;
+    float roughness = 7;
+
+    // if texture mapping comes into play
+    // create map
 }
 
 message Vec3 {
@@ -156,9 +172,5 @@ message Quat {
 }
 
 message Spatial {
-    repeated float matrix = 1;
+    repeated float matrix = 1; // this will store exactly 16 values always
 }
-
-// message ProtoGuid {
-//     string guid = 1;
-// }

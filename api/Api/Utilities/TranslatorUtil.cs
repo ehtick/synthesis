@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Xml;
 using SynthesisAPI.Proto;
+using UnityEngine;
 
 /// <summary>
 /// Utility class defined in the main scope
@@ -109,4 +110,7 @@ internal static class TranslatorUtil {
                 return b.ToString()[0];
         }
     }
+
+    public static Vector3 GetPosition(this Matrix4x4 m)
+        => new Vector3(m.m30, m.m31, m.m32);
 }

@@ -55,6 +55,7 @@ For support contact frc@autodesk.com</PackageReleaseNotes>
 
     <ItemGroup>
       <ProjectReference Include="..\Aardvark\Aardvark.csproj" />
+      <ProjectReference Include="..\Mirabuf\Mirabuf.csproj" />
     </ItemGroup>
 
 </Project>

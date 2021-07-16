@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Google.Protobuf;
-using SynthesisAPI.Translation;
 using UnityEngine;
 
 namespace SynthesisAPI.Proto {

@@ -2,7 +2,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Mirabuf;
 using UnityEngine;
+using Transform = UnityEngine.Transform;
 
 public static class UtilExtensions {
     public static void ForEachIndex<T>(this IEnumerable<T> arr, Action<int, T> act) {
@@ -32,4 +34,21 @@ public static class UtilExtensions {
         }
         return default;
     }
+
+    public static void ApplyMatrix(this Transform trans, Matrix4x4 m) {
+        trans.localPosition = m.GetPosition();
+        trans.localRotation = m.rotation;
+        trans.localScale = m.lossyScale;
+    }
+
+    public static IEnumerable<Node> UnravelNodes(this IEnumerable<Edge> edges) {
+        var nodes = new Node[edges.Count()];
+        for (int i = 0; i < nodes.Length; i++) {
+            nodes[i] = edges.ElementAt(i).Node;
+        }
+        return nodes;
+    }
+    
+    public static Vector3 GetPosition(this Matrix4x4 m)
+        => new Vector3(m.m30, m.m31, m.m32);
 }

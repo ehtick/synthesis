@@ -11,6 +11,7 @@ using SynthesisAPI.Runtime;
 using SynthesisAPI.Utilities;
 using Logger = SynthesisAPI.Utilities.Logger;
 using System.Reflection;
+using Color = UnityEngine.Color;
 
 namespace SynthesisAPI.UIManager
 {

@@ -1,2 +1,2 @@
 @echo off
-protoc --csharp_out=../api/Api/Proto/ v1/ProtoBot.proto
+protoc --csharp_out=../api/Api/Proto/ --python_out=./python/ v1/ProtoBot.proto

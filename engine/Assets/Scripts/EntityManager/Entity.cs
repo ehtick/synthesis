@@ -41,44 +41,44 @@ namespace Synthesis.Entitys {
         }
     }
 
-    public class Robot: Entity {
-
-        public string Name => _meta.Name;
-        private DynamicObjectMeta _meta;
-        public Dictionary<Guid, GameObject> Nodes => _meta.Nodes;
-        public Dictionary<Guid, EntityFlag> Tags => _meta.Flags;
-        
-        public float MaxSpeed = 1000;
-        
-        public bool[] WheelConfig;
-        
-        public List<HingeJoint> Wheels = new List<HingeJoint>();
-        public List<HingeJoint> Arms = new List<HingeJoint>();
-        
-        public Robot( GameObject rootObject, DynamicObjectMeta meta) : base(rootObject) {
-            _meta = meta;
-            var wheelMotor = new JointMotor();
-            wheelMotor.force = 100;
-            wheelMotor.freeSpin = true;
-            wheelMotor.targetVelocity = MaxSpeed;
-            
-            Nodes.ForEach((key, value) => {
-                if (HasFlag(key, EntityFlag.Hinge)) {
-                    var hinge = value.GetComponent<HingeJoint>();
-                    if (HasFlag(key, EntityFlag.Wheel)) {
-                        hinge.motor = wheelMotor;
-                        hinge.useMotor = true;
-                        Wheels.Add(hinge);
-                        Debug.Log("Adding motor");
-                    } else {
-                        Arms.Add(hinge);
-                    }
-                }
-            });
-            
-            WheelConfig = new bool[Wheels.Count()];
-        }
-        
-        public bool HasFlag(Guid guid, EntityFlag flag) => _meta.HasFlag(guid, flag);
-    }
+    // public class Robot: Entity {
+    //
+    //     public string Name => _meta.Name;
+    //     private DynamicObjectMeta _meta;
+    //     public Dictionary<Guid, GameObject> Nodes => _meta.Nodes;
+    //     public Dictionary<Guid, EntityFlag> Tags => _meta.Flags;
+    //     
+    //     public float MaxSpeed = 1000;
+    //     
+    //     public bool[] WheelConfig;
+    //     
+    //     public List<HingeJoint> Wheels = new List<HingeJoint>();
+    //     public List<HingeJoint> Arms = new List<HingeJoint>();
+    //     
+    //     public Robot( GameObject rootObject, DynamicObjectMeta meta) : base(rootObject) {
+    //         _meta = meta;
+    //         var wheelMotor = new JointMotor();
+    //         wheelMotor.force = 100;
+    //         wheelMotor.freeSpin = true;
+    //         wheelMotor.targetVelocity = MaxSpeed;
+    //         
+    //         Nodes.ForEach((key, value) => {
+    //             if (HasFlag(key, EntityFlag.Hinge)) {
+    //                 var hinge = value.GetComponent<HingeJoint>();
+    //                 if (HasFlag(key, EntityFlag.Wheel)) {
+    //                     hinge.motor = wheelMotor;
+    //                     hinge.useMotor = true;
+    //                     Wheels.Add(hinge);
+    //                     Debug.Log("Adding motor");
+    //                 } else {
+    //                     Arms.Add(hinge);
+    //                 }
+    //             }
+    //         });
+    //         
+    //         WheelConfig = new bool[Wheels.Count()];
+    //     }
+    //     
+    //     public bool HasFlag(Guid guid, EntityFlag flag) => _meta.HasFlag(guid, flag);
+    // }
 }

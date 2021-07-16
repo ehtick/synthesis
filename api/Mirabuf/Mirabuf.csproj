@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Google.Protobuf" Version="3.17.3" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Aardvark\Aardvark.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <HintPath>..\libs\UnityEngine.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
+</Project>

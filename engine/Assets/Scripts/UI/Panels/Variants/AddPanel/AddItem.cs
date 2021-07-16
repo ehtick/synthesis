@@ -16,13 +16,13 @@ public class AddItem : MonoBehaviour
     public void AddModel()
     {
         //ModelManager.AddModel(_fullPath);//importer
-        p.GetComponent<PTL>().SpawnRobot(_fullPath);
+        // p.GetComponent<PTL>().SpawnRobot(_fullPath);
         _parentPanel.Close();
     }
 
     public void AddField()
     {
-        p.GetComponent<PTL>().SpawnField(_fullPath);
+        // p.GetComponent<PTL>().SpawnField(_fullPath);
         _parentPanel.Close();
     }
 

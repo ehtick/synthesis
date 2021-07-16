@@ -4,6 +4,7 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.Rendering;
 
+using UMesh = UnityEngine.Mesh;
 using UMaterial = UnityEngine.Material;
 
 namespace SynthesisAPI.Proto {
@@ -11,38 +12,32 @@ namespace SynthesisAPI.Proto {
     /// <summary>
     /// Partial class to add utility functions and properties to Protobuf types
     /// </summary>
-    public partial class UniqueMesh {
-        public (Mesh unityMesh, List<UMaterial> materials) CreateMesh(SimObject source) {
-            Mesh m = new Mesh();
-            m.indexFormat = IndexFormat.UInt32;
-            List<Vector3> verts = new List<Vector3>();
-            int[] tris = new int[Triangles.Count];
-            SubMeshDescriptor[] descriptors = new SubMeshDescriptor[SubMeshes.Count];
-            for (int j = 0; j < Vertices.Count; j++) {
-                verts.Add(Vertices[j]);
-            }
-            for (int i = 0; i < Triangles.Count; i++) {
-                tris[i] = Triangles[i];
-            }
-            for (int i = 0; i < SubMeshes.Count; i++) {
-                descriptors[i] = new SubMeshDescriptor(SubMeshes[i].Start, SubMeshes[i].Count);
-            }
-            m.vertices = verts.ToArray();
-            m.triangles = tris;
-            m.SetSubMeshes(descriptors);
-            m.RecalculateNormals();
-
-            var mats = new List<UMaterial>();
-            for (int i = 0; i < SubMeshes.Count; i++) {
-                // This really isn't necessary, I just got bored
-                mats.Add(source.ParseMaterials().ParsedMaterials[SubMeshes[i].Material]);
-            }
-
-            // Debug.Log($"{verts.Count} -> {m.vertices.Length}");
-            // Debug.Log($"{tris.Length} -> {m.triangles.Length}");
-            // Debug.Log($"Polygons: {m.triangles.Length / 3}");
-            
-            return (m, mats);
-        }
+    public partial class Mesh {
+        // private UMesh _unityMesh = null;
+        // public UMesh UnityMesh {
+        //     get {
+        //         if (_unityMesh == null) {
+        //             _unityMesh = new UMesh();
+        //             _unityMesh.indexFormat = IndexFormat.UInt32;
+        //
+        //             int i;
+        //             var verts = new Vector3[Vertices.Count];
+        //             for (i = 0; i < verts.Length; i++) {
+        //                 verts[i] = Vertices[i];
+        //             }
+        //             var tris = new int[Triangles.Count];
+        //             Triangles.CopyTo(tris, 0);
+        //
+        //             _unityMesh.vertices = verts;
+        //             _unityMesh.triangles = tris;
+        //             _unityMesh.RecalculateNormals();
+        //         }
+        //
+        //         return _unityMesh;
+        //     }
+        // }
+        //
+        // public static implicit operator UMesh(Mesh m)
+        //     => m.UnityMesh;
     }
 }

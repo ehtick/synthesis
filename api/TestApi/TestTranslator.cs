@@ -2,8 +2,8 @@ using NUnit.Framework;
 using System;
 using System.IO;
 using System.Text;
-using SynthesisAPI.Proto;
-using SynthesisAPI.Translation;
+using Mirabuf;
+using Material = SynthesisAPI.Proto.Material;
 
 namespace TestApi {
     [TestFixture]
@@ -23,61 +23,61 @@ namespace TestApi {
                     + "Fields" + Path.AltDirectorySeparatorChar;
         }
 
+        // [Test]
+        // public static void TranslateDozerTest() {
+        //     string path = BaseRobotPath + "Dozer";
+        //     if (!File.Exists(path)) {
+        //         Assert.Warn("File doesn't exist");
+        //         return;
+        //     }
+        //
+        //     Translator.Translate(path, Translator.TranslationType.BXDJ_TO_PROTO_ROBOT);
+        //
+        //     Assert.Pass();
+        // }
+        //
+        // [Test]
+        // public static void TranslateMeanMachineTest() {
+        //     string path = BaseRobotPath + "2018 - 2471 Mean Machine";
+        //     if (!File.Exists(path)) {
+        //         Assert.Warn("File doesn't exist");
+        //         return;
+        //     }
+        //     
+        //     Translator.Translate(path, Translator.TranslationType.BXDJ_TO_PROTO_ROBOT);
+        //
+        //     Assert.Pass();
+        // }
+        //
+        // [Test]
+        // public static void TranslateAerialAssistTest() {
+        //     string path = BaseFieldPath + "2014 Aerial Assist";
+        //     if (!File.Exists(path)) {
+        //         Assert.Warn("File doesn't exist");
+        //         return;
+        //     }
+        //     
+        //     Translator.Translate(path, Translator.TranslationType.BXDF_TO_PROTO_FIELD);
+        //
+        //     Assert.Pass();
+        // }
+        //
+        // [Test]
+        // public static void TranslateDestinationDeepSpaceTest() {
+        //     string path = BaseFieldPath + "2019 Destination Deep Space";
+        //     if (!File.Exists(path)) {
+        //         Assert.Warn("File doesn't exist");
+        //         return;
+        //     }
+        //     
+        //     Translator.Translate(path, Translator.TranslationType.BXDF_TO_PROTO_FIELD);
+        //
+        //     Assert.Pass();
+        // }
+
         [Test]
-        public static void TranslateDozerTest() {
-            string path = BaseRobotPath + "Dozer";
-            if (!File.Exists(path)) {
-                Assert.Warn("File doesn't exist");
-                return;
-            }
-
-            Translator.Translate(path, Translator.TranslationType.BXDJ_TO_PROTO_ROBOT);
-
-            Assert.Pass();
-        }
-        
-        [Test]
-        public static void TranslateMeanMachineTest() {
-            string path = BaseRobotPath + "2018 - 2471 Mean Machine";
-            if (!File.Exists(path)) {
-                Assert.Warn("File doesn't exist");
-                return;
-            }
-            
-            Translator.Translate(path, Translator.TranslationType.BXDJ_TO_PROTO_ROBOT);
-
-            Assert.Pass();
-        }
-
-        [Test]
-        public static void TranslateAerialAssistTest() {
-            string path = BaseFieldPath + "2014 Aerial Assist";
-            if (!File.Exists(path)) {
-                Assert.Warn("File doesn't exist");
-                return;
-            }
-            
-            Translator.Translate(path, Translator.TranslationType.BXDF_TO_PROTO_FIELD);
-
-            Assert.Pass();
-        }
-        
-        [Test]
-        public static void TranslateDestinationDeepSpaceTest() {
-            string path = BaseFieldPath + "2019 Destination Deep Space";
-            if (!File.Exists(path)) {
-                Assert.Warn("File doesn't exist");
-                return;
-            }
-            
-            Translator.Translate(path, Translator.TranslationType.BXDF_TO_PROTO_FIELD);
-
-            Assert.Pass();
-        }
-
-        [Test]
-        public static void Vec3Tests() {
-            Vec3 a = new Vec3() { X = 3, Y = 4, Z = 0 };
+        public static void Vector3_f32Tests() {
+            Vector3_f32 a = new Vector3_f32() { X = 3, Y = 4, Z = 0 };
             Assert.IsTrue(Math.Abs(a.Magnitude - 5f) < 0.005);
             a.Z = 7;
             a.Normalize();
@@ -114,10 +114,10 @@ namespace TestApi {
             Assert.IsTrue(nibble == 'f');
         }
 
-        [Test]
-        public static void TempFileHashTest() {
-            byte[] buf = Encoding.ASCII.GetBytes("Hello World!");
-            Assert.IsTrue(Translator.TempFileHash(buf).ToHexString() == "7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069");
-        }
+        // [Test]
+        // public static void TempFileHashTest() {
+        //     byte[] buf = Encoding.ASCII.GetBytes("Hello World!");
+        //     Assert.IsTrue(Translator.TempFileHash(buf).ToHexString() == "7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069");
+        // }
     }
 }
