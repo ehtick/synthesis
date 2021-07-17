@@ -162,16 +162,39 @@ namespace Synthesis.Import {
             Dictionary<string, GameObject> gameObjects = new Dictionary<string, GameObject>();
             var parts = assembly.Data.Parts;
             collidersToIgnore = new List<Collider>();
-            foreach (var partInstance in parts.PartInstances) {
-                GameObject partObject = new GameObject(partInstance.Value.Info.Name);
-                MakePartDefinition(partObject, assembly.Data.Parts.PartDefinitions[partInstance.Value.PartDefinitionReference], assembly.Data);
-                gameObjects.Add(partInstance.Key, partObject);
-                partObject.transform.parent = assemblyObject.transform;
-                // MARK: If transform changes do work recursively, apply transformations here instead of in a separate loop
-                var physicalData = assembly.Data.Parts.PartDefinitions[partInstance.Value.PartDefinitionReference].PhysicalData;
-                var rb = partObject.AddComponent<Rigidbody>();
-                rb.mass = (float)physicalData.Mass;
-                rb.centerOfMass = physicalData.Com; // I actually don't need to flip this
+            
+            // Construct rigid groups
+            var groupings = new Dictionary<string, RigidGroup>();
+            var partToGroupMap = new Dictionary<string, string>(); // Curious if I'm going to use this
+            foreach (var rigidGroup in assembly.Data.Joints.RigidGroups) {
+                groupings.Add(rigidGroup.Name, rigidGroup);
+                foreach (var part in rigidGroup.Occurrences) {
+                    // TODO: Can 1 part exist in multiple rigid groups?
+                    partToGroupMap.Add(part, rigidGroup.Name);
+                }
+            }
+
+            foreach (var kvp in parts.PartInstances) {
+                if (!partToGroupMap.ContainsKey(kvp.Key)) {
+                    string name = $"single_grouping:{kvp.Key}";
+                    var singleGroup = new RigidGroup {Name = name};
+                    singleGroup.Occurrences.Add(kvp.Key);
+                    groupings.Add(name, singleGroup);
+                    partToGroupMap.Add(kvp.Key, name);
+                }
+            }
+            
+            foreach (var group in groupings) {
+                
+                // GameObject partObject = new GameObject(partInstance.Value.Info.Name);
+                // MakePartDefinition(partObject, assembly.Data.Parts.PartDefinitions[partInstance.Value.PartDefinitionReference], assembly.Data);
+                // gameObjects.Add(partInstance.Key, partObject);
+                // partObject.transform.parent = assemblyObject.transform;
+                // // MARK: If transform changes do work recursively, apply transformations here instead of in a separate loop
+                // var physicalData = assembly.Data.Parts.PartDefinitions[partInstance.Value.PartDefinitionReference].PhysicalData;
+                // var rb = partObject.AddComponent<Rigidbody>();
+                // rb.mass = (float)physicalData.Mass;
+                // rb.centerOfMass = physicalData.Com; // I actually don't need to flip this
             }
             ApplyTransformationsToGraph(gameObjects, assembly);
             for (int i = 0; i < collidersToIgnore.Count - 1; i++) {
@@ -201,6 +224,11 @@ namespace Synthesis.Import {
             gameObject.transform.ApplyMatrix(data.Parts.PartInstances[part].Transform.SpatialMatrix.UnityMatrix);
         }
 
+        public static void MakeRigidGroup(GameObject container, IEnumerable<string> parts, AssemblyData assemblyData) {
+            
+        }
+        
+        // Keep this
         // TODO: Collider Ignorance (Is that the correct term?)
         public static void MakePartDefinition(GameObject container, PartDefinition definition, AssemblyData assemblyData) {
             PhysicMaterial physMat = new PhysicMaterial {
