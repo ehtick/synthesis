@@ -25,45 +25,46 @@ namespace Mirabuf {
       byte[] descriptorData = global::System.Convert.FromBase64String(
           string.Concat(
             "Cg5hc3NlbWJseS5wcm90bxIHbWlyYWJ1ZhoLdHlwZXMucHJvdG8aC2pvaW50",
-            "LnByb3RvGg5tYXRlcmlhbC5wcm90byIzCgpBc3NlbWJsaWVzEiUKCmFzc2Vt",
-            "YmxpZXMYASADKAsyES5taXJhYnVmLkFzc2VtYmx5Ip0CCghBc3NlbWJseRIb",
-            "CgRpbmZvGAEgASgLMg0ubWlyYWJ1Zi5JbmZvEiMKBGRhdGEYAiABKAsyFS5t",
-            "aXJhYnVmLkFzc2VtYmx5RGF0YRIPCgdkeW5hbWljGAMgASgIEjIKDXBoeXNp",
-            "Y2FsX2RhdGEYBCABKAsyGy5taXJhYnVmLlBoeXNpY2FsUHJvcGVydGllcxIx",
-            "ChBkZXNpZ25faGllcmFyY2h5GAUgASgLMhcubWlyYWJ1Zi5HcmFwaENvbnRh",
-            "aW5lchIwCg9qb2ludF9oaWVyYXJjaHkYBiABKAsyFy5taXJhYnVmLkdyYXBo",
-            "Q29udGFpbmVyEiUKCXRyYW5zZm9ybRgHIAEoCzISLm1pcmFidWYuVHJhbnNm",
-            "b3JtInUKDEFzc2VtYmx5RGF0YRIdCgVwYXJ0cxgBIAEoCzIOLm1pcmFidWYu",
-            "UGFydHMSHwoGam9pbnRzGAIgASgLMg8ubWlyYWJ1Zi5Kb2ludHMSJQoJbWF0",
-            "ZXJpYWxzGAMgASgLMhIubWlyYWJ1Zi5NYXRlcmlhbHMitAIKBVBhcnRzEhsK",
-            "BGluZm8YASABKAsyDS5taXJhYnVmLkluZm8SPQoQcGFydF9kZWZpbml0aW9u",
-            "cxgCIAMoCzIjLm1pcmFidWYuUGFydHMuUGFydERlZmluaXRpb25zRW50cnkS",
-            "OQoOcGFydF9pbnN0YW5jZXMYAyADKAsyIS5taXJhYnVmLlBhcnRzLlBhcnRJ",
-            "bnN0YW5jZXNFbnRyeRpPChRQYXJ0RGVmaW5pdGlvbnNFbnRyeRILCgNrZXkY",
-            "ASABKAkSJgoFdmFsdWUYAiABKAsyFy5taXJhYnVmLlBhcnREZWZpbml0aW9u",
-            "OgI4ARpDChJQYXJ0SW5zdGFuY2VzRW50cnkSCwoDa2V5GAEgASgJEhwKBXZh",
-            "bHVlGAIgASgLMg0ubWlyYWJ1Zi5QYXJ0OgI4ASKsAQoOUGFydERlZmluaXRp",
-            "b24SGwoEaW5mbxgBIAEoCzINLm1pcmFidWYuSW5mbxIyCg1waHlzaWNhbF9k",
-            "YXRhGAIgASgLMhsubWlyYWJ1Zi5QaHlzaWNhbFByb3BlcnRpZXMSKgoOYmFz",
-            "ZV90cmFuc2Zvcm0YAyABKAsyEi5taXJhYnVmLlRyYW5zZm9ybRIdCgZib2Rp",
-            "ZXMYBCADKAsyDS5taXJhYnVmLkJvZHkifQoEUGFydBIbCgRpbmZvGAEgASgL",
-            "Mg0ubWlyYWJ1Zi5JbmZvEiEKGXBhcnRfZGVmaW5pdGlvbl9yZWZlcmVuY2UY",
-            "AiABKAkSJQoJdHJhbnNmb3JtGAMgASgLMhIubWlyYWJ1Zi5UcmFuc2Zvcm0S",
-            "DgoGam9pbnRzGAQgAygJInEKBEJvZHkSGwoEaW5mbxgBIAEoCzINLm1pcmFi",
-            "dWYuSW5mbxIMCgRwYXJ0GAIgASgJEiwKDXRyaWFuZ2xlX21lc2gYAyABKAsy",
-            "FS5taXJhYnVmLlRyaWFuZ2xlTWVzaBIQCghtYXRlcmlhbBgEIAEoCSKtAQoM",
-            "VHJpYW5nbGVNZXNoEhsKBGluZm8YASABKAsyDS5taXJhYnVmLkluZm8SEgoK",
-            "aGFzX3ZvbHVtZRgCIAEoCBIaChJtYXRlcmlhbF9yZWZlcmVuY2UYAyABKAkS",
-            "HQoEbWVzaBgEIAEoCzINLm1pcmFidWYuTWVzaEgAEiQKBWJtZXNoGAUgASgL",
-            "MhMubWlyYWJ1Zi5CaW5hcnlNZXNoSABCCwoJbWVzaF90eXBlIkMKBE1lc2gS",
-            "DQoFdmVydHMYASADKAISDwoHbm9ybWFscxgCIAMoAhIKCgJ1dhgDIAMoAhIP",
-            "CgdpbmRpY2VzGAQgAygFIhoKCkJpbmFyeU1lc2gSDAoEZGF0YRgBIAEoDEIC",
-            "SAFiBnByb3RvMw=="));
+            "LnByb3RvGg5tYXRlcmlhbC5wcm90bxoMbGF5b3V0LnByb3RvIjMKCkFzc2Vt",
+            "YmxpZXMSJQoKYXNzZW1ibGllcxgBIAMoCzIRLm1pcmFidWYuQXNzZW1ibHki",
+            "vgIKCEFzc2VtYmx5EhsKBGluZm8YASABKAsyDS5taXJhYnVmLkluZm8SIwoE",
+            "ZGF0YRgCIAEoCzIVLm1pcmFidWYuQXNzZW1ibHlEYXRhEg8KB2R5bmFtaWMY",
+            "AyABKAgSMgoNcGh5c2ljYWxfZGF0YRgEIAEoCzIbLm1pcmFidWYuUGh5c2lj",
+            "YWxQcm9wZXJ0aWVzEjEKEGRlc2lnbl9oaWVyYXJjaHkYBSABKAsyFy5taXJh",
+            "YnVmLkdyYXBoQ29udGFpbmVyEjAKD2pvaW50X2hpZXJhcmNoeRgGIAEoCzIX",
+            "Lm1pcmFidWYuR3JhcGhDb250YWluZXISJQoJdHJhbnNmb3JtGAcgASgLMhIu",
+            "bWlyYWJ1Zi5UcmFuc2Zvcm0SHwoGbGF5b3V0GAggASgLMg8ubWlyYWJ1Zi5M",
+            "YXlvdXQidQoMQXNzZW1ibHlEYXRhEh0KBXBhcnRzGAEgASgLMg4ubWlyYWJ1",
+            "Zi5QYXJ0cxIfCgZqb2ludHMYAiABKAsyDy5taXJhYnVmLkpvaW50cxIlCglt",
+            "YXRlcmlhbHMYAyABKAsyEi5taXJhYnVmLk1hdGVyaWFscyK0AgoFUGFydHMS",
+            "GwoEaW5mbxgBIAEoCzINLm1pcmFidWYuSW5mbxI9ChBwYXJ0X2RlZmluaXRp",
+            "b25zGAIgAygLMiMubWlyYWJ1Zi5QYXJ0cy5QYXJ0RGVmaW5pdGlvbnNFbnRy",
+            "eRI5Cg5wYXJ0X2luc3RhbmNlcxgDIAMoCzIhLm1pcmFidWYuUGFydHMuUGFy",
+            "dEluc3RhbmNlc0VudHJ5Gk8KFFBhcnREZWZpbml0aW9uc0VudHJ5EgsKA2tl",
+            "eRgBIAEoCRImCgV2YWx1ZRgCIAEoCzIXLm1pcmFidWYuUGFydERlZmluaXRp",
+            "b246AjgBGkMKElBhcnRJbnN0YW5jZXNFbnRyeRILCgNrZXkYASABKAkSHAoF",
+            "dmFsdWUYAiABKAsyDS5taXJhYnVmLlBhcnQ6AjgBIqwBCg5QYXJ0RGVmaW5p",
+            "dGlvbhIbCgRpbmZvGAEgASgLMg0ubWlyYWJ1Zi5JbmZvEjIKDXBoeXNpY2Fs",
+            "X2RhdGEYAiABKAsyGy5taXJhYnVmLlBoeXNpY2FsUHJvcGVydGllcxIqCg5i",
+            "YXNlX3RyYW5zZm9ybRgDIAEoCzISLm1pcmFidWYuVHJhbnNmb3JtEh0KBmJv",
+            "ZGllcxgEIAMoCzINLm1pcmFidWYuQm9keSJ9CgRQYXJ0EhsKBGluZm8YASAB",
+            "KAsyDS5taXJhYnVmLkluZm8SIQoZcGFydF9kZWZpbml0aW9uX3JlZmVyZW5j",
+            "ZRgCIAEoCRIlCgl0cmFuc2Zvcm0YAyABKAsyEi5taXJhYnVmLlRyYW5zZm9y",
+            "bRIOCgZqb2ludHMYBCADKAkicQoEQm9keRIbCgRpbmZvGAEgASgLMg0ubWly",
+            "YWJ1Zi5JbmZvEgwKBHBhcnQYAiABKAkSLAoNdHJpYW5nbGVfbWVzaBgDIAEo",
+            "CzIVLm1pcmFidWYuVHJpYW5nbGVNZXNoEhAKCG1hdGVyaWFsGAQgASgJIq0B",
+            "CgxUcmlhbmdsZU1lc2gSGwoEaW5mbxgBIAEoCzINLm1pcmFidWYuSW5mbxIS",
+            "CgpoYXNfdm9sdW1lGAIgASgIEhoKEm1hdGVyaWFsX3JlZmVyZW5jZRgDIAEo",
+            "CRIdCgRtZXNoGAQgASgLMg0ubWlyYWJ1Zi5NZXNoSAASJAoFYm1lc2gYBSAB",
+            "KAsyEy5taXJhYnVmLkJpbmFyeU1lc2hIAEILCgltZXNoX3R5cGUiQwoETWVz",
+            "aBINCgV2ZXJ0cxgBIAMoAhIPCgdub3JtYWxzGAIgAygCEgoKAnV2GAMgAygC",
+            "Eg8KB2luZGljZXMYBCADKAUiGgoKQmluYXJ5TWVzaBIMCgRkYXRhGAEgASgM",
+            "QgJIAWIGcHJvdG8z"));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
-          new pbr::FileDescriptor[] { global::Mirabuf.TypesReflection.Descriptor, global::Mirabuf.JointReflection.Descriptor, global::Mirabuf.MaterialReflection.Descriptor, },
+          new pbr::FileDescriptor[] { global::Mirabuf.TypesReflection.Descriptor, global::Mirabuf.JointReflection.Descriptor, global::Mirabuf.MaterialReflection.Descriptor, global::Mirabuf.LayoutReflection.Descriptor, },
           new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
             new pbr::GeneratedClrTypeInfo(typeof(global::Mirabuf.Assemblies), global::Mirabuf.Assemblies.Parser, new[]{ "Assemblies_" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Mirabuf.Assembly), global::Mirabuf.Assembly.Parser, new[]{ "Info", "Data", "Dynamic", "PhysicalData", "DesignHierarchy", "JointHierarchy", "Transform" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Mirabuf.Assembly), global::Mirabuf.Assembly.Parser, new[]{ "Info", "Data", "Dynamic", "PhysicalData", "DesignHierarchy", "JointHierarchy", "Transform", "Layout" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Mirabuf.AssemblyData), global::Mirabuf.AssemblyData.Parser, new[]{ "Parts", "Joints", "Materials" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Mirabuf.Parts), global::Mirabuf.Parts.Parser, new[]{ "Info", "PartDefinitions", "PartInstances" }, null, null, null, new pbr::GeneratedClrTypeInfo[] { null, null, }),
             new pbr::GeneratedClrTypeInfo(typeof(global::Mirabuf.PartDefinition), global::Mirabuf.PartDefinition.Parser, new[]{ "Info", "PhysicalData", "BaseTransform", "Bodies" }, null, null, null, null),
@@ -302,6 +303,7 @@ namespace Mirabuf {
       designHierarchy_ = other.designHierarchy_ != null ? other.designHierarchy_.Clone() : null;
       jointHierarchy_ = other.jointHierarchy_ != null ? other.jointHierarchy_.Clone() : null;
       transform_ = other.transform_ != null ? other.transform_.Clone() : null;
+      layout_ = other.layout_ != null ? other.layout_.Clone() : null;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -416,6 +418,21 @@ namespace Mirabuf {
       }
     }
 
+    /// <summary>Field number for the "layout" field.</summary>
+    public const int LayoutFieldNumber = 8;
+    private global::Mirabuf.Layout layout_;
+    /// <summary>
+    //// Layout of controllable inputs and outputs
+    /// </summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::Mirabuf.Layout Layout {
+      get { return layout_; }
+      set {
+        layout_ = value;
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -438,6 +455,7 @@ namespace Mirabuf {
       if (!object.Equals(DesignHierarchy, other.DesignHierarchy)) return false;
       if (!object.Equals(JointHierarchy, other.JointHierarchy)) return false;
       if (!object.Equals(Transform, other.Transform)) return false;
+      if (!object.Equals(Layout, other.Layout)) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -452,6 +470,7 @@ namespace Mirabuf {
       if (designHierarchy_ != null) hash ^= DesignHierarchy.GetHashCode();
       if (jointHierarchy_ != null) hash ^= JointHierarchy.GetHashCode();
       if (transform_ != null) hash ^= Transform.GetHashCode();
+      if (layout_ != null) hash ^= Layout.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -498,6 +517,10 @@ namespace Mirabuf {
         output.WriteRawTag(58);
         output.WriteMessage(Transform);
       }
+      if (layout_ != null) {
+        output.WriteRawTag(66);
+        output.WriteMessage(Layout);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -536,6 +559,10 @@ namespace Mirabuf {
         output.WriteRawTag(58);
         output.WriteMessage(Transform);
       }
+      if (layout_ != null) {
+        output.WriteRawTag(66);
+        output.WriteMessage(Layout);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -566,6 +593,9 @@ namespace Mirabuf {
       }
       if (transform_ != null) {
         size += 1 + pb::CodedOutputStream.ComputeMessageSize(Transform);
+      }
+      if (layout_ != null) {
+        size += 1 + pb::CodedOutputStream.ComputeMessageSize(Layout);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -617,6 +647,12 @@ namespace Mirabuf {
           Transform = new global::Mirabuf.Transform();
         }
         Transform.MergeFrom(other.Transform);
+      }
+      if (other.layout_ != null) {
+        if (layout_ == null) {
+          Layout = new global::Mirabuf.Layout();
+        }
+        Layout.MergeFrom(other.Layout);
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -679,6 +715,13 @@ namespace Mirabuf {
             input.ReadMessage(Transform);
             break;
           }
+          case 66: {
+            if (layout_ == null) {
+              Layout = new global::Mirabuf.Layout();
+            }
+            input.ReadMessage(Layout);
+            break;
+          }
         }
       }
     #endif
@@ -738,6 +781,13 @@ namespace Mirabuf {
               Transform = new global::Mirabuf.Transform();
             }
             input.ReadMessage(Transform);
+            break;
+          }
+          case 66: {
+            if (layout_ == null) {
+              Layout = new global::Mirabuf.Layout();
+            }
+            input.ReadMessage(Layout);
             break;
           }
         }

@@ -5,6 +5,8 @@ using System.Linq;
 using Mirabuf;
 using UnityEngine;
 using Transform = UnityEngine.Transform;
+using Vector3 = Mirabuf.Vector3;
+using UVector3 = UnityEngine.Vector3;
 
 public static class UtilExtensions {
     public static void ForEachIndex<T>(this IEnumerable<T> arr, Action<int, T> act) {
@@ -41,14 +43,14 @@ public static class UtilExtensions {
         trans.localScale = m.lossyScale;
     }
 
-    public static IEnumerable<Node> UnravelNodes(this IEnumerable<Edge> edges) {
-        var nodes = new Node[edges.Count()];
-        for (int i = 0; i < nodes.Length; i++) {
-            nodes[i] = edges.ElementAt(i).Node;
-        }
-        return nodes;
-    }
+    // public static IEnumerable<Node> UnravelNodes(this IEnumerable<Edge> edges) {
+    //     var nodes = new Node[edges.Count()];
+    //     for (int i = 0; i < nodes.Length; i++) {
+    //         nodes[i] = edges.ElementAt(i).Node;
+    //     }
+    //     return nodes;
+    // }
     
-    public static Vector3 GetPosition(this Matrix4x4 m)
-        => new Vector3(m.m30, m.m31, m.m32);
+    public static UVector3 GetPosition(this Matrix4x4 m)
+        => new UVector3(m.m30, m.m31, m.m32);
 }

@@ -24,34 +24,35 @@ namespace Mirabuf {
     static JointReflection() {
       byte[] descriptorData = global::System.Convert.FromBase64String(
           string.Concat(
-            "Cgtqb2ludC5wcm90bxIHbWlyYWJ1ZhoLdHlwZXMucHJvdG8ikQEKBkpvaW50",
+            "Cgtqb2ludC5wcm90bxIHbWlyYWJ1ZhoLdHlwZXMucHJvdG8iuwEKBkpvaW50",
             "cxIbCgRpbmZvGAEgASgLMg0ubWlyYWJ1Zi5JbmZvEisKBmpvaW50cxgCIAMo",
-            "CzIbLm1pcmFidWYuSm9pbnRzLkpvaW50c0VudHJ5Gj0KC0pvaW50c0VudHJ5",
-            "EgsKA2tleRgBIAEoCRIdCgV2YWx1ZRgCIAEoCzIOLm1pcmFidWYuSm9pbnQ6",
-            "AjgBIpMDCgVKb2ludBINCgVQYXJ0MRgBIAEoCRINCgVQYXJ0MhgCIAEoCRIb",
-            "CgRpbmZvGAMgASgLMg0ubWlyYWJ1Zi5JbmZvEiAKBm9yaWdpbhgEIAEoCzIQ",
-            "Lm1pcmFidWYuVmVjdG9yMxIOCgZPZmZzZXQYBSABKAESDQoFQW5nbGUYBiAB",
-            "KAESLQoPSm9pbnRNb3Rpb25UeXBlGAcgASgOMhQubWlyYWJ1Zi5Kb2ludE1v",
-            "dGlvbhIUCgxNYXhpbXVtVmFsdWUYCCABKAESFAoMTWluaW11bVZhbHVlGAkg",
-            "ASgBEhEKCVJlc3RWYWx1ZRgKIAEoARIyCg5SZXZvbHV0ZU1vdGlvbhgLIAEo",
-            "CzIYLm1pcmFidWYuUm90YXRpb25hbEpvaW50SAASKwoLU2xpZGVNb3Rpb24Y",
-            "DCABKAsyFC5taXJhYnVmLlNsaWRlckpvaW50SAASKgoLUmlnaWRNb3Rpb24Y",
-            "DSABKAsyEy5taXJhYnVmLlJpZ2lkSm9pbnRIAEITChFNb3Rpb25EZXNjcmlw",
-            "dGlvbiKWAQoPUm90YXRpb25hbEpvaW50EiMKDFJvdGF0aW9uQXhpcxgBIAEo",
-            "DjINLm1pcmFidWYuQXhpcxIkCgpBeGlzVmVjdG9yGAIgASgLMhAubWlyYWJ1",
-            "Zi5WZWN0b3IzEhAKCE1heFZhbHVlGAMgASgBEhAKCE1pblZhbHVlGAQgASgB",
-            "EhQKDEN1cnJlbnRWYWx1ZRgFIAEoASKPAQoLU2xpZGVySm9pbnQSIAoJU2xp",
-            "ZGVBeGlzGAEgASgOMg0ubWlyYWJ1Zi5BeGlzEiQKCkF4aXNWZWN0b3IYAiAB",
-            "KAsyEC5taXJhYnVmLlZlY3RvcjMSEAoITWF4VmFsdWUYAyABKAESEAoITWlu",
-            "VmFsdWUYBCABKAESFAoMQ3VycmVudFZhbHVlGAUgASgBIgwKClJpZ2lkSm9p",
-            "bnQiLwoKUmlnaWRHcm91cBIMCgRuYW1lGAEgASgJEhMKC29jY3VycmVuY2Vz",
-            "GAIgAygJKmsKC0pvaW50TW90aW9uEgkKBVJpZ2lkEAASDAoIUmV2b2x1dGUQ",
-            "ARIKCgZTbGlkZXIQAhIPCgtDeWxpbmRyaWNhbBADEgsKB1BpblNsb3QQBBIK",
-            "CgZQbGFuYXIQBRINCglCYWxsSm9pbnQQBmIGcHJvdG8z"));
+            "CzIbLm1pcmFidWYuSm9pbnRzLkpvaW50c0VudHJ5EigKC3JpZ2lkR3JvdXBz",
+            "GAMgAygLMhMubWlyYWJ1Zi5SaWdpZEdyb3VwGj0KC0pvaW50c0VudHJ5EgsK",
+            "A2tleRgBIAEoCRIdCgV2YWx1ZRgCIAEoCzIOLm1pcmFidWYuSm9pbnQ6AjgB",
+            "IpMDCgVKb2ludBINCgVQYXJ0MRgBIAEoCRINCgVQYXJ0MhgCIAEoCRIbCgRp",
+            "bmZvGAMgASgLMg0ubWlyYWJ1Zi5JbmZvEiAKBm9yaWdpbhgEIAEoCzIQLm1p",
+            "cmFidWYuVmVjdG9yMxIOCgZPZmZzZXQYBSABKAESDQoFQW5nbGUYBiABKAES",
+            "LQoPSm9pbnRNb3Rpb25UeXBlGAcgASgOMhQubWlyYWJ1Zi5Kb2ludE1vdGlv",
+            "bhIUCgxNYXhpbXVtVmFsdWUYCCABKAESFAoMTWluaW11bVZhbHVlGAkgASgB",
+            "EhEKCVJlc3RWYWx1ZRgKIAEoARIyCg5SZXZvbHV0ZU1vdGlvbhgLIAEoCzIY",
+            "Lm1pcmFidWYuUm90YXRpb25hbEpvaW50SAASKwoLU2xpZGVNb3Rpb24YDCAB",
+            "KAsyFC5taXJhYnVmLlNsaWRlckpvaW50SAASKgoLUmlnaWRNb3Rpb24YDSAB",
+            "KAsyEy5taXJhYnVmLlJpZ2lkSm9pbnRIAEITChFNb3Rpb25EZXNjcmlwdGlv",
+            "biKWAQoPUm90YXRpb25hbEpvaW50EiMKDFJvdGF0aW9uQXhpcxgBIAEoDjIN",
+            "Lm1pcmFidWYuQXhpcxIkCgpBeGlzVmVjdG9yGAIgASgLMhAubWlyYWJ1Zi5W",
+            "ZWN0b3IzEhAKCE1heFZhbHVlGAMgASgBEhAKCE1pblZhbHVlGAQgASgBEhQK",
+            "DEN1cnJlbnRWYWx1ZRgFIAEoASKPAQoLU2xpZGVySm9pbnQSIAoJU2xpZGVB",
+            "eGlzGAEgASgOMg0ubWlyYWJ1Zi5BeGlzEiQKCkF4aXNWZWN0b3IYAiABKAsy",
+            "EC5taXJhYnVmLlZlY3RvcjMSEAoITWF4VmFsdWUYAyABKAESEAoITWluVmFs",
+            "dWUYBCABKAESFAoMQ3VycmVudFZhbHVlGAUgASgBIgwKClJpZ2lkSm9pbnQi",
+            "LwoKUmlnaWRHcm91cBIMCgRuYW1lGAEgASgJEhMKC29jY3VycmVuY2VzGAIg",
+            "AygJKmsKC0pvaW50TW90aW9uEgkKBVJpZ2lkEAASDAoIUmV2b2x1dGUQARIK",
+            "CgZTbGlkZXIQAhIPCgtDeWxpbmRyaWNhbBADEgsKB1BpblNsb3QQBBIKCgZQ",
+            "bGFuYXIQBRINCglCYWxsSm9pbnQQBmIGcHJvdG8z"));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { global::Mirabuf.TypesReflection.Descriptor, },
           new pbr::GeneratedClrTypeInfo(new[] {typeof(global::Mirabuf.JointMotion), }, null, new pbr::GeneratedClrTypeInfo[] {
-            new pbr::GeneratedClrTypeInfo(typeof(global::Mirabuf.Joints), global::Mirabuf.Joints.Parser, new[]{ "Info", "Joints_" }, null, null, null, new pbr::GeneratedClrTypeInfo[] { null, }),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Mirabuf.Joints), global::Mirabuf.Joints.Parser, new[]{ "Info", "Joints_", "RigidGroups" }, null, null, null, new pbr::GeneratedClrTypeInfo[] { null, }),
             new pbr::GeneratedClrTypeInfo(typeof(global::Mirabuf.Joint), global::Mirabuf.Joint.Parser, new[]{ "Part1", "Part2", "Info", "Origin", "Offset", "Angle", "JointMotionType", "MaximumValue", "MinimumValue", "RestValue", "RevoluteMotion", "SlideMotion", "RigidMotion" }, new[]{ "MotionDescription" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Mirabuf.RotationalJoint), global::Mirabuf.RotationalJoint.Parser, new[]{ "RotationAxis", "AxisVector", "MaxValue", "MinValue", "CurrentValue" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Mirabuf.SliderJoint), global::Mirabuf.SliderJoint.Parser, new[]{ "SlideAxis", "AxisVector", "MaxValue", "MinValue", "CurrentValue" }, null, null, null, null),
@@ -118,6 +119,7 @@ namespace Mirabuf {
     public Joints(Joints other) : this() {
       info_ = other.info_ != null ? other.info_.Clone() : null;
       joints_ = other.joints_.Clone();
+      rigidGroups_ = other.rigidGroups_.Clone();
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -150,6 +152,17 @@ namespace Mirabuf {
       get { return joints_; }
     }
 
+    /// <summary>Field number for the "rigidGroups" field.</summary>
+    public const int RigidGroupsFieldNumber = 3;
+    private static readonly pb::FieldCodec<global::Mirabuf.RigidGroup> _repeated_rigidGroups_codec
+        = pb::FieldCodec.ForMessage(26, global::Mirabuf.RigidGroup.Parser);
+    private readonly pbc::RepeatedField<global::Mirabuf.RigidGroup> rigidGroups_ = new pbc::RepeatedField<global::Mirabuf.RigidGroup>();
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public pbc::RepeatedField<global::Mirabuf.RigidGroup> RigidGroups {
+      get { return rigidGroups_; }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -167,6 +180,7 @@ namespace Mirabuf {
       }
       if (!object.Equals(Info, other.Info)) return false;
       if (!Joints_.Equals(other.Joints_)) return false;
+      if(!rigidGroups_.Equals(other.rigidGroups_)) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -176,6 +190,7 @@ namespace Mirabuf {
       int hash = 1;
       if (info_ != null) hash ^= Info.GetHashCode();
       hash ^= Joints_.GetHashCode();
+      hash ^= rigidGroups_.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -199,6 +214,7 @@ namespace Mirabuf {
         output.WriteMessage(Info);
       }
       joints_.WriteTo(output, _map_joints_codec);
+      rigidGroups_.WriteTo(output, _repeated_rigidGroups_codec);
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -214,6 +230,7 @@ namespace Mirabuf {
         output.WriteMessage(Info);
       }
       joints_.WriteTo(ref output, _map_joints_codec);
+      rigidGroups_.WriteTo(ref output, _repeated_rigidGroups_codec);
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -228,6 +245,7 @@ namespace Mirabuf {
         size += 1 + pb::CodedOutputStream.ComputeMessageSize(Info);
       }
       size += joints_.CalculateSize(_map_joints_codec);
+      size += rigidGroups_.CalculateSize(_repeated_rigidGroups_codec);
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
       }
@@ -247,6 +265,7 @@ namespace Mirabuf {
         Info.MergeFrom(other.Info);
       }
       joints_.Add(other.joints_);
+      rigidGroups_.Add(other.rigidGroups_);
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
 
@@ -273,6 +292,10 @@ namespace Mirabuf {
             joints_.AddEntriesFrom(input, _map_joints_codec);
             break;
           }
+          case 26: {
+            rigidGroups_.AddEntriesFrom(input, _repeated_rigidGroups_codec);
+            break;
+          }
         }
       }
     #endif
@@ -297,6 +320,10 @@ namespace Mirabuf {
           }
           case 18: {
             joints_.AddEntriesFrom(ref input, _map_joints_codec);
+            break;
+          }
+          case 26: {
+            rigidGroups_.AddEntriesFrom(ref input, _repeated_rigidGroups_codec);
             break;
           }
         }

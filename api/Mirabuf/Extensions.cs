@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEngine;
 
 internal static class Extensions {
-    public static Vector2[] ToVector2Array(this IEnumerable<int> data) {
+    public static Vector2[] ToVector2Array(this IEnumerable<float> data) {
         Vector2[] vertices = new Vector2[data.Count() / 2];
         for (int i = 0; i < data.Count(); i += 2) {
             // TODO: Flip the X

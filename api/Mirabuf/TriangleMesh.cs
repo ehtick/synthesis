@@ -2,6 +2,7 @@
 using System.Linq;
 using UnityEngine;
 using UMesh = UnityEngine.Mesh;
+using UVector3 = UnityEngine.Vector3;
 
 namespace Mirabuf {
     public partial class TriangleMesh {
@@ -12,8 +13,7 @@ namespace Mirabuf {
                     _unityMesh = new UMesh();
                     switch (MeshTypeCase) {
                         case MeshTypeOneofCase.Mesh:
-                            Vector3[] vertices = this.Mesh.Verts.ToVector3Array();
-                            _unityMesh.vertices = vertices;
+                            _unityMesh.vertices = this.Mesh.Verts.ToVector3Array();
                             _unityMesh.triangles = this.Mesh.Indices.ToArray();
                             if (this.Mesh.Normals.Count > 0)
                                 _unityMesh.normals = this.Mesh.Normals.ToVector3Array();

@@ -77,7 +77,7 @@ namespace TestApi {
 
         [Test]
         public static void Vector3_f32Tests() {
-            Vector3_f32 a = new Vector3_f32() { X = 3, Y = 4, Z = 0 };
+            Vector3 a = new Vector3() { X = 3, Y = 4, Z = 0 };
             Assert.IsTrue(Math.Abs(a.Magnitude - 5f) < 0.005);
             a.Z = 7;
             a.Normalize();

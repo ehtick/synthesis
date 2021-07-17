@@ -204,8 +204,8 @@ namespace Synthesis.Import {
         // TODO: Collider Ignorance (Is that the correct term?)
         public static void MakePartDefinition(GameObject container, PartDefinition definition, AssemblyData assemblyData) {
             PhysicMaterial physMat = new PhysicMaterial {
-                dynamicFriction = definition.PhysicalData.Friction,
-                staticFriction = definition.PhysicalData.Friction
+                dynamicFriction = 0.6f, // definition.PhysicalData.,
+                staticFriction = 0.6f // definition.PhysicalData.Friction
             };
             foreach (var body in definition.Bodies) {
                 GameObject bodyObject = new GameObject(body.Info.Name);
