@@ -183,6 +183,8 @@ namespace Synthesis.Import {
                     partToGroupMap.Add(kvp.Key, name);
                 }
             }
+
+            var globalTransformations = MakeGlobalTransformations(assembly);
             
             foreach (var group in groupings) {
                 
@@ -206,6 +208,23 @@ namespace Synthesis.Import {
             // TODO: Joints, Rigidbodies, Etc.
             
             return assemblyObject;
+        }
+
+        // I think this might work?
+        public static Dictionary<string, Matrix4x4> MakeGlobalTransformations(Assembly assembly) {
+            var map = new Dictionary<string, Matrix4x4>();
+            foreach (Node n in assembly.DesignHierarchy.Nodes) {
+                map.Add(n.Value, assembly.Data.Parts.PartInstances[n.Value].Transform.UnityMatrix);
+                MakeGlobalTransformations(map, map[n.Value], assembly.Data.Parts, n);
+            }
+            return map;
+        }
+
+        public static void MakeGlobalTransformations(Dictionary<string, Matrix4x4> map, Matrix4x4 parent, Parts parts, Node node) {
+            foreach (var child in node.Children) {
+                map.Add(child.Value, parent * parts.PartInstances[child.Value].Transform.UnityMatrix);
+                MakeGlobalTransformations(map, map[child.Value], parts, child);
+            }
         }
 
         public static void ApplyTransformationsToGraph(Dictionary<string, GameObject> gameObjects, Assembly assembly) {
