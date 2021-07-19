@@ -464,10 +464,11 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
                 ).children.itemById("renderMode")
                 renderer = 0
                 dropdown = adsk.core.DropDownCommandInput.cast(render_dropdown)
-                if dropdown.selectedItem.name == "Standard":
-                    renderer = 0
-                elif dropdown.selectedItem.name == "URP":
-                    renderer = 1
+                if (dropdown):
+                    if dropdown.selectedItem.name == "Standard":
+                        renderer = 0
+                    elif dropdown.selectedItem.name == "URP":
+                        renderer = 1
 
                 # now construct a ParseOptions and save the file
                 # since self.current is already up to date might as well use it
@@ -475,7 +476,6 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
                     savepath,
                     name,
                     version,
-                    materials=renderer,
                     mode=mode,
                     wheel=[],
                     joints=[]
@@ -522,14 +522,18 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
 
             if generalSettingsInputs and _general:
                 # vrSettingsInputs = generalSettingsInputs.itemById("vrSettings")
+                try:
+                    _general.material.checked = generalSettingsInputs.itemById(
+                        "materials"
+                    ).value
 
-                _general.material.checked = generalSettingsInputs.itemById(
-                    "materials"
-                ).value
-                _general.joints.checked = generalSettingsInputs.itemById("joints").value
-                _general.rigidGroups.checked = generalSettingsInputs.itemById(
-                    "rigidGroups"
-                ).value
+                    _general.joints.checked = generalSettingsInputs.itemById("joints").value
+                    _general.rigidGroups.checked = generalSettingsInputs.itemById(
+                        "rigidGroups"
+                    ).value
+                except:
+                    # this will force an error - ignore for now
+                    pass
 
             if advancedSettingsInputs and _advanced:
 
