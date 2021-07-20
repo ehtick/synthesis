@@ -159,9 +159,9 @@ namespace Synthesis.Import {
 
             GameObject assemblyObject = new GameObject(assembly.Info.Name);
 
-            Dictionary<string, GameObject> gameObjects = new Dictionary<string, GameObject>();
             var parts = assembly.Data.Parts;
-            collidersToIgnore = new List<Collider>();
+            
+            
             
             // Construct rigid groups
             var groupings = new Dictionary<string, RigidGroup>();
@@ -173,7 +173,6 @@ namespace Synthesis.Import {
                     partToGroupMap.Add(part, rigidGroup.Name);
                 }
             }
-
             foreach (var kvp in parts.PartInstances) {
                 if (!partToGroupMap.ContainsKey(kvp.Key)) {
                     string name = $"single_grouping:{kvp.Key}";
@@ -184,19 +183,25 @@ namespace Synthesis.Import {
                 }
             }
 
-            var globalTransformations = MakeGlobalTransformations(assembly);
+            var globalTransformations = MakeGlobalTransformations(assembly); // Not sure I need to store it
+            var gameObjects = new Dictionary<string, GameObject>();
+            collidersToIgnore = new List<Collider>();
             
             foreach (var group in groupings) {
-                
-                // GameObject partObject = new GameObject(partInstance.Value.Info.Name);
-                // MakePartDefinition(partObject, assembly.Data.Parts.PartDefinitions[partInstance.Value.PartDefinitionReference], assembly.Data);
-                // gameObjects.Add(partInstance.Key, partObject);
-                // partObject.transform.parent = assemblyObject.transform;
-                // // MARK: If transform changes do work recursively, apply transformations here instead of in a separate loop
-                // var physicalData = assembly.Data.Parts.PartDefinitions[partInstance.Value.PartDefinitionReference].PhysicalData;
-                // var rb = partObject.AddComponent<Rigidbody>();
-                // rb.mass = (float)physicalData.Mass;
-                // rb.centerOfMass = physicalData.Com; // I actually don't need to flip this
+                GameObject groupObject = new GameObject(group.Key);
+                foreach (var part in group.Value.Occurrences) {
+                    var partInstance = parts.PartInstances[part];
+                    var partDefinition = parts.PartDefinitions[partInstance.PartDefinitionReference];
+                    GameObject partObject = new GameObject(partInstance.Info.Name);
+                    MakePartDefinition(partObject, partDefinition, assembly.Data);
+                    gameObjects.Add(part, partObject);
+                    partObject.transform.parent = assemblyObject.transform;
+                    // MARK: If transform changes do work recursively, apply transformations here instead of in a separate loop
+                    var physicalData = partDefinition.PhysicalData;
+                    var rb = partObject.AddComponent<Rigidbody>();
+                    rb.mass = (float)physicalData.Mass;
+                    rb.centerOfMass = physicalData.Com; // I actually don't need to flip this
+                }
             }
             ApplyTransformationsToGraph(gameObjects, assembly);
             for (int i = 0; i < collidersToIgnore.Count - 1; i++) {
@@ -216,6 +221,9 @@ namespace Synthesis.Import {
             foreach (Node n in assembly.DesignHierarchy.Nodes) {
                 map.Add(n.Value, assembly.Data.Parts.PartInstances[n.Value].Transform.UnityMatrix);
                 MakeGlobalTransformations(map, map[n.Value], assembly.Data.Parts, n);
+            }
+            foreach (var kvp in map) {
+                assembly.Data.Parts.PartInstances[kvp.Key].GlobalTransform = map[kvp.Key];
             }
             return map;
         }
