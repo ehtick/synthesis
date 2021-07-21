@@ -22,12 +22,15 @@ public class PTL : MonoBehaviour {
     private string POWER_UP;
 
     private void Start() {
-        DOZER = ParsePath("$appdata/Autodesk/Synthesis/Robots/Dozer");
-        MEAN_MACHINE = ParsePath("$appdata/Autodesk/Synthesis/Robots/2018 - 2471 Mean Machine");
-        AERIAL_ASSIST = ParsePath("$appdata/Autodesk/Synthesis/Fields/2014 Aerial Assist");
-        SYNTHEPARK = ParsePath("$appdata/Autodesk/Synthesis/Fields/SynthePark");
-        DESTINATION_DEEP_SPACE = ParsePath("$appdata/Autodesk/Synthesis/Fields/2019 Destination Deep Space");
-        POWER_UP = ParsePath("$appdata/Autodesk/Synthesis/Fields/2018 Power Up");
+        // DOZER = ParsePath("$appdata/Autodesk/Synthesis/Robots/Dozer");
+        // MEAN_MACHINE = ParsePath("$appdata/Autodesk/Synthesis/Robots/2018 - 2471 Mean Machine");
+        // AERIAL_ASSIST = ParsePath("$appdata/Autodesk/Synthesis/Fields/2014 Aerial Assist");
+        // SYNTHEPARK = ParsePath("$appdata/Autodesk/Synthesis/Fields/SynthePark");
+        // DESTINATION_DEEP_SPACE = ParsePath("$appdata/Autodesk/Synthesis/Fields/2019 Destination Deep Space");
+        // POWER_UP = ParsePath("$appdata/Autodesk/Synthesis/Fields/2018 Power Up");
+
+        string miraTest = ParsePath("$appdata/Autodesk/Synthesis/TestingExports/chair_v8.mira");
+        GameObject assemblyObject = Importer.AssemblyImport(File.ReadAllBytes(miraTest));
 
         // SpawnRobot(MEAN_MACHINE);
 

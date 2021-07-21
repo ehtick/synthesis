@@ -14,7 +14,7 @@ namespace Mirabuf {
                     switch (MeshTypeCase) {
                         case MeshTypeOneofCase.Mesh:
                             _unityMesh.vertices = this.Mesh.Verts.ToVector3Array();
-                            _unityMesh.triangles = this.Mesh.Indices.ToArray();
+                            _unityMesh.triangles = this.Mesh.Indices.Reverse().ToArray();
                             if (this.Mesh.Normals.Count > 0)
                                 _unityMesh.normals = this.Mesh.Normals.ToVector3Array();
                             else

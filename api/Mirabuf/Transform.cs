@@ -12,6 +12,7 @@ namespace Mirabuf {
                         new Vector4(SpatialMatrix[2], SpatialMatrix[6], SpatialMatrix[10], SpatialMatrix[14]),
                         new Vector4(SpatialMatrix[3], SpatialMatrix[7], SpatialMatrix[11], SpatialMatrix[15])
                         );
+                    // _unityMatrix = _unityMatrix.transpose; // I'm tired
                 }
                 return _unityMatrix;
             }

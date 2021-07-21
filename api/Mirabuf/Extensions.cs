@@ -12,11 +12,13 @@ internal static class Extensions {
         }
         return vertices;
     }
-    public static Vector3[] ToVector3Array(this IEnumerable<float> data) {
+    public static Vector3[] ToVector3Array(this IEnumerable<float> data, bool normalize = false) {
         Vector3[] vertices = new Vector3[data.Count() / 3];
         for (int i = 0; i < data.Count(); i += 3) {
             // TODO: Flip the X
-            vertices[i / 3] = new Vector3(data.ElementAt(i), data.ElementAt(i + 1), data.ElementAt(i + 2));
+            vertices[i / 3] = new Vector3(data.ElementAt(i) * -0.01f, data.ElementAt(i + 1) * 0.01f, data.ElementAt(i + 2) * 0.01f);
+            if (normalize)
+                vertices[i / 3] = vertices[i / 3].normalized;
         }
         return vertices;
     }

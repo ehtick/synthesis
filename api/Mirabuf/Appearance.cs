@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using UMaterial = UnityEngine.Material;
 
-namespace Mirabuf {
+namespace Mirabuf.Material {
     public partial class Appearance {
         private UMaterial _unityMaterial = null;
         public UMaterial UnityMaterial {
@@ -22,11 +22,18 @@ namespace Mirabuf {
                         _unityMaterial.DisableKeyword("_ALPHAPREMULTIPLY_ON");
                         _unityMaterial.renderQueue = 3000;
                     }
-                    _unityMaterial.SetFloat("_Roughness", Roughness);
+                    _unityMaterial.SetFloat("_Roughness", (float)Roughness);
                     // TODO: Specular and Metallic
                 }
                 return _unityMaterial;
             }
         }
+
+        public static readonly Appearance DefaultAppearance = new Appearance {
+            Albedo = new Color { A = 255, R = 12, G = 12, B = 12 },
+            Roughness = 0.7,
+            Metallic = 0.1,
+            Specular = 0.1
+        };
     }
 }
