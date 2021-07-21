@@ -177,60 +177,29 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             # advancedSettings.isExpanded = False
             # advancedSettings.isActive = False
             advancedSettings.tooltip = "Additional Advanced Settings to change how your model will be translated into Unity."
+            
             a_input = advancedSettings.children
 
-            self.createBooleanInput(
-                "friction",
-                "Friction",
-                a_input,
-                checked=previous.advanced.friction.checked,
-                tooltipadvanced="Export Friction value for each body?",
-                enabled=False,
-            )
+            physics_advanced_group = a_input.addGroupCommandInput("advanced_physics_group", "Physics Properties").children
 
             self.createBooleanInput(
                 "density",
                 "Density",
-                a_input,
-                checked=previous.advanced.density.checked,
-                tooltipadvanced="Export Density value for each body?",
-                enabled=False,
+                physics_advanced_group,
+                checked=True,
+                tooltipadvanced="Export Density for each physical body in kg/m^3",
+                enabled=True,
             )
 
-            self.createBooleanInput(
-                "mass",
-                "Mass",
-                a_input,
-                checked=previous.advanced.mass.checked,
-                tooltipadvanced="Export Mass value for each body in kg?",
-                enabled=False,
-            )
+            joints_advanced_group = a_input.addGroupCommandInput("advanced_joints_group", "Joints Properties").children
 
             self.createBooleanInput(
-                "volume",
-                "Volume",
-                a_input,
-                checked=previous.advanced.volume.checked,
-                tooltipadvanced="Export volume value for each body?",
-                enabled=False,
-            )
-
-            self.createBooleanInput(
-                "surfacearea",
-                "Surface Area",
-                a_input,
-                checked=previous.advanced.surfaceArea.checked,
-                tooltipadvanced="Export Surface Area value for each body?",
-                enabled=False,
-            )
-
-            self.createBooleanInput(
-                "com",
-                "Center of Mass",
-                a_input,
-                checked=previous.advanced.com.checked,
-                tooltipadvanced="Export Center of Mass Vector for each body?",
-                enabled=False,
+                "kinematic_joints",
+                "Kinematic Joints",
+                joints_advanced_group,
+                checked=True,
+                tooltipadvanced="Export Joints as Kinematic Bodies.",
+                enabled=True,
             )
 
             """
@@ -634,15 +603,6 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
 
             if cmdInput.id == "mode":
                 dropdown = adsk.core.DropDownCommandInput.cast(cmdInput)
-                vr = inputs.itemById("vrsettings")
-                if dropdown.selectedItem.name == "VR":
-                    if vr:
-                        vr.isEnabled = True
-                        vr.isExpanded = True
-                else:
-                    if vr:
-                        vr.isEnabled = False
-                        vr.isExpanded = False
 
             elif cmdInput.id == "exportjoints":
                 boolValue = adsk.core.BoolValueCommandInput.cast(cmdInput)
@@ -657,42 +617,6 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                         jointConfig.isEnabled = False
                         jointConfig.isExpanded = False
 
-            #elif cmdInput.id == "placeholder" or cmdInput.id == "occ_name": # tried to disable the delete button when no row was selected...
-            #    iconFocus = adsk.core.ImageCommandInput.cast(cmdInput)
-            #    textFocus = adsk.core.TextBoxCommandInput.cast(cmdInput)
-            #    table = inputs.itemById("wheeltable")
-            #    occurrence = _occ["wheel"][table.selectedRow]#.component
-            #    if iconFocus or textFocus:
-            #        design = adsk.fusion.Design.cast(gm.app.activeProduct)
-            #        root = design.rootComponent
-            #        
-            #        #if root.customGraphicsGroups.count != 0:
-            #        for i in range(root.customGraphicsGroups.count):
-            #            root.customGraphicsGroups.item(i).deleteMe()
-            #            gm.app.activeViewport.refresh()
-            #            #return
-            #        
-            #        gm.app.activeViewport.refresh()
-            #        
-            #        graphics = root.customGraphicsGroups.add()
-            #        for i in range(occurrence.bRepBodies.count):
-            #            bodyMesh = occurrence.bRepBodies.item(i).meshManager.displayMeshes.bestMesh
-            #            coords = adsk.fusion.CustomGraphicsCoordinates.create(bodyMesh.nodeCoordinatesAsDouble)
-            #            mesh = graphics.addMesh(
-            #                coords, bodyMesh.nodeIndices, bodyMesh.normalVectorsAsDouble, bodyMesh.nodeIndices
-            #            )
-            #            # Create the color effect.
-            #            #redColor = adsk.core.Color.create(255,0,0,255)
-            #            #solidColor = adsk.fusion.CustomGraphicsSolidColorEffect.create(redColor)
-            #            #mesh.color = solidColor
-#
-            #            showThrough = adsk.fusion.CustomGraphicsShowThroughColorEffect.create(adsk.core.Color.create(255, 0, 0, 255), 0.2)
-            #            mesh.color = showThrough
-#
-            #            # Set the mesh to be colored using the show through color effect.
-            #            #mesh.color = showThrough
-            #        #gm.ui.messageBox("focused!!!!")
-
 
             elif cmdInput.id == "wheelconfig":
                 group1 = adsk.core.GroupCommandInput.cast(cmdInput)
@@ -704,7 +628,6 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                     for i in range(len(_occ["wheel"])):
                         #wheel_select.append(_occ["wheel"][i])
                         gm.ui.activeSelections.add(_occ["wheel"][i])
-
             elif cmdInput.id == "jointconfig":
                 group2 = adsk.core.GroupCommandInput.cast(cmdInput)
 
