@@ -33,12 +33,12 @@ class WheelType:
 # will need to be constructed in the UI Configure on Export
 @dataclass
 class _Wheel:
-    occurrence: adsk.fusion.Occurrence # maybe just pass the component
+    occurrence_token: str # maybe just pass the component
     wheelType: WheelType
 
 @dataclass
 class _Joint:
-    joint: adsk.fusion.Joint
+    joint_token: str
     parent: Union[adsk.fusion.Joint, JointParentType] # str can be root
 
 
@@ -93,8 +93,8 @@ class ParseOptions:
         physicalDepth=PhysicalDepth.AllOccurrence,
         materials=1,
         mode=Mode.Synthesis,
-        #wheels=List[_Wheel],
-        #joints=List[_Joint] # [{Occurrence, wheeltype} , {entitytoken, wheeltype}]
+        wheels=List[_Wheel],
+        joints=List[_Joint] # [{Occurrence, wheeltype} , {entitytoken, wheeltype}]
         ):
         """Generates the Parser Options for the given export
 

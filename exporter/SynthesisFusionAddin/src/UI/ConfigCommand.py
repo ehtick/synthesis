@@ -508,10 +508,6 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
                 ).children.itemById("renderMode")
                 renderer = 0
                 dropdown = adsk.core.DropDownCommandInput.cast(render_dropdown)
-                if dropdown.selectedItem.name == "Standard":
-                    renderer = 0
-                elif dropdown.selectedItem.name == "URP":
-                    renderer = 1
 
                 _exportWheels = []
                 _exportJoints = []
@@ -524,18 +520,18 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
                     index = wheelTableInput.getInputAtPosition(row, 2).selectedItem.index
                     
                     if index == 0:
-                            _exportWheels.append(_Wheel(_wheels[row], WheelType.STANDARD))
+                            _exportWheels.append(_Wheel(_wheels[row].entityToken, WheelType.STANDARD))
                     elif index == 1:
-                            _exportWheels.append(_Wheel(_wheels[row], WheelType.OMNI))
+                            _exportWheels.append(_Wheel(_wheels[row].entityToken, WheelType.OMNI))
 
                 for row in range(jointTableInput.rowCount):
                     item = jointTableInput.getInputAtPosition(row, 2).selectedItem
 
                     if item.name == "Root":
-                        _exportJoints.append(_Joint(_joints[row], JointParentType.ROOT))
+                        _exportJoints.append(_Joint(_joints[row].entityToken, JointParentType.ROOT))
                     else:
                         index = joint_name.index(item.name)
-                        _exportJoints.append(_Joint(_joints[row], _joints[index]))
+                        _exportJoints.append(_Joint(_joints[row].entityToken, _joints[index]))
 
                 # now construct a ParseOptions and save the file
                 # since self.current is already up to date might as well use it
@@ -916,7 +912,7 @@ def addJointToTable(joint):
     jointTableInput.addCommandInput(name, row, 1)
     jointTableInput.addCommandInput(jointType, row, 2)
 
-def addWheelToTable(wheel):
+def addWheelToTable(wheel: adsk.fusion.Occurrence):
     # get the CommandInputs object associated with the parent command.
     cmdInputs = adsk.core.CommandInputs.cast(wheelTableInput.commandInputs)
     icon = cmdInputs.addImageCommandInput("placeholder", "Placeholder", iconPaths["standard"])
@@ -944,6 +940,7 @@ def addWheelToTable(wheel):
     wheelType.toolClipFilename = (
         "src\Resources\omni-wheel-preview.png"
     )
+
     row = wheelTableInput.rowCount
 
     wheelTableInput.addCommandInput(icon, row, 0)
