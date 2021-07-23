@@ -6,7 +6,7 @@ from ..configure import NOTIFIED, write_configuration
 from ..Analytics.alert import showAnalyticsAlert
 from . import Helper, FileDialogConfig, OsHelper
 
-from ..Parser.ParseOptions import ParseOptions, _Joint, _Wheel
+from ..Parser.ParseOptions import ParseOptions, _Joint, _Wheel, WheelType, JointParentType
 from .Configuration.SerialCommand import (
     Struct,
     SerialCommand,
@@ -24,6 +24,10 @@ File to generate and link the Configuration Command seen when pressing the butto
 """
 previous = None
 ui = adsk.core.UserInterface.cast(None)
+
+# group globals
+wheelConfig = adsk.core.GroupCommandInput.cast(None)
+jointConfig = adsk.core.GroupCommandInput.cast(None)
 
 # joint & wheel table globals
 wheelTableInput = adsk.core.TableCommandInput.cast(None)
@@ -257,7 +261,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             self.createBooleanInput(
                 "simplewheelexport",
                 "Simple Wheel Export",
-                inputs,
+                wheel_inputs,
                 #checked=previous.general.simpleWheelExport.checked,
                 tooltipadvanced="Export Center of Mass Vector for each body?",
                 enabled=True,
@@ -266,6 +270,8 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             """
             Joint Configuration
             """
+            global jointConfig
+
             jointConfig = inputs.addGroupCommandInput("jointconfig", "Joint Configuration")
             jointConfig.isExpanded = True # later, change back to false
             jointConfig.isEnabled = True
@@ -507,8 +513,12 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
                 elif dropdown.selectedItem.name == "URP":
                     renderer = 1
 
-                """_exportWheels = []
+                _exportWheels = []
                 _exportJoints = []
+                joint_name = []
+
+                for i in range(len(_joints)):
+                    joint_name.append(_joints[i].name)
 
                 for row in range(wheelTableInput.rowCount):
                     index = wheelTableInput.getInputAtPosition(row, 2).selectedItem.index
@@ -524,9 +534,8 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
                     if item.name == "Root":
                         _exportJoints.append(_Joint(_joints[row], JointParentType.ROOT))
                     else:
-                        for occ in _joints:
-                            if item.name == occ.name:
-                                _exportJoints.append(_Joint(_joints[row], occ))
+                        index = joint_name.index(item.name)
+                        _exportJoints.append(_Joint(_joints[row], _joints[index]))
 
                 # now construct a ParseOptions and save the file
                 # since self.current is already up to date might as well use it
@@ -535,21 +544,21 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
                     name,
                     version,
                     materials=renderer,
-                    #joints=_exportJoints,
-                    #wheels=_exportWheels,
+                    joints=_exportJoints,
+                    wheels=_exportWheels,
                     mode=mode,
-                )"""
+                )
                 
                 # now construct a ParseOptions and save the file
                 # since self.current is already up to date might as well use it
-                options = ParseOptions(
-                    savepath,
-                    name,
-                    version,
-                    materials=renderer,
-                    joints=self.current.general.joints.checked,
-                    mode=mode,
-                )
+                #options = ParseOptions(
+                #    savepath,
+                #    name,
+                #    version,
+                #    materials=renderer,
+                #    joints=self.current.general.joints.checked,
+                #    mode=mode,
+                #)
                 if options.parse(False):
                     # success
                     pass
@@ -630,6 +639,8 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
                             
             elif selectedJoint:
                 if selectedJoint.jointMotion.jointType == 0:
+                    #gm.ui.messageBox("rigid joint")
+                    gm.ui.messageBox(str(gm.ui.activeSelections.count))
                     gm.ui.activeSelections.removeBySelection(args.selection)
                 else:
                     _joints.append(selectedJoint)
@@ -678,7 +689,7 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
 
     def notify(self, args):
         try:
-            global wheelTableInput
+            global wheelTableInput, jointConfig
             
             eventArgs = adsk.core.InputChangedEventArgs.cast(args)
             cmdInput = eventArgs.input
@@ -756,7 +767,9 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                     iconInput.tooltip = "Omni wheel"
 
             elif cmdInput.id == "wheeladd":
-                addJointInput.isEnabled = \
+                if jointConfig.isEnabled == True:
+                    addJointInput.isEnabled = True
+
                 wheelSelect.isEnabled = True
                 
                 addWheelInput.isEnabled = False
@@ -765,7 +778,9 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
             elif cmdInput.id == "wheeldelete":
                 table = inputs.itemById("wheeltable")
                 addWheelInput.isEnabled = True
-                addJointInput.isEnabled = True
+                
+                if jointConfig.isEnabled == True:
+                    addJointInput.isEnabled = True
                 
                 if table.selectedRow == -1:
                     gm.ui.messageBox(
