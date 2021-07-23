@@ -157,6 +157,14 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 "This will be future formats and or generic / advanced objects."
             )
             
+            # Accepts weight and weight type
+            weightConfig = inputs.addStringValueInput("synthesis_weight", "Weight (integer)", "10")
+
+            weightType = inputs.addDropDownCommandInput("synthesis_weight_type", "Weight Type", adsk.core.DropDownStyles.TextListDropDownStyle)
+            weightTypeItems = weightType.listItems
+            weightTypeItems.add('Item 1', "lbs", '')
+            weightTypeItems.add('Item 2', "kgs", '')
+
             self.createBooleanInput(
                 "exportjoints",
                 "Export Additional Joints",
@@ -523,9 +531,7 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
             if generalSettingsInputs and _general:
                 # vrSettingsInputs = generalSettingsInputs.itemById("vrSettings")
                 try:
-                    _general.material.checked = generalSettingsInputs.itemById(
-                        "materials"
-                    ).value
+                    _general.material.checked = generalSettingsInputs.itemById("materials").value
 
                     _general.joints.checked = generalSettingsInputs.itemById("joints").value
                     _general.rigidGroups.checked = generalSettingsInputs.itemById(
