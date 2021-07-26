@@ -10,7 +10,7 @@ from proto.proto_out import assembly_pb2
 
 # from . import Joints, Materials, Components, Utilities
 
-from . import Materials, Components
+from . import Materials, Components, Joints
 
 from .Utilities import *
 
@@ -78,8 +78,15 @@ class Parser:
                 progressDialog,
                 self.parseOptions,
                 assembly_out.data.parts,
-                assembly_out.data.materials.materials,
+                assembly_out.data.materials.appearances,
                 rootNode
+            )
+
+            Joints.populateJoints(
+                design,
+                assembly_out.data.joints,
+                progressDialog,
+                self.parseOptions
             )
 
             assembly_out.design_hierarchy.nodes.append(rootNode)
@@ -99,9 +106,10 @@ class Parser:
 
             part_defs = assembly_out.data.parts.part_definitions
             parts = assembly_out.data.parts.part_instances
+            joints = assembly_out.data.joints.joint_definitions
 
             gm.ui.messageBox(
-                f"Materials: {len(assembly_out.data.materials.materials)}\nPart-Definitions: {len(part_defs)}\nParts: {len(parts)}"
+                f"Materials: {len(assembly_out.data.materials.appearances)} \nPart-Definitions: {len(part_defs)} \nParts: {len(parts)} \nJoints: {len(joints)}"
             )
 
         except:
