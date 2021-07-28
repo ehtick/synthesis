@@ -899,7 +899,7 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                 wheelSelect.isEnabled = True
                 addWheelInput.isEnabled = False
 
-                for occ in gm.design.rootComponent.allOccurrences:
+                for occ in gm.app.activeDocument.design.rootComponent.allOccurrences:
                     if occ in _wheels:
                         pass
                     else:
