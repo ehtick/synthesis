@@ -754,24 +754,21 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
             selectedOcc = adsk.fusion.Occurrence.cast(args.selection.entity)
             selectedJoint = adsk.fusion.Joint.cast(args.selection.entity)
 
-            if selectedOcc: # selection breaks when you select root comp.
+            if selectedOcc:
                 if dropdownExportMode.selectedItem.name == "Robot":
                     if duplicateSelection.value == True:
                         for occ in gm.app.activeDocument.design.rootComponent.occurrencesByComponent(selectedOcc.component):   
                             if occ not in _wheels:
                                 _wheels.append(occ)
                                 addWheelToTable(occ)
-                               # occ.isSelectable == False
                     else:
                         if selectedOcc not in _wheels:
                             _wheels.append(selectedOcc)
                             addWheelToTable(selectedOcc)
-                            #selectedOcc.isSelectable == False
                 elif dropdownExportMode.selectedItem.name == "Field":
                     if selectedOcc not in _gamepieces:    
                         _gamepieces.append(selectedOcc)
                         addGamepieceToTable(selectedOcc)
-                        #selectedOcc.isSelectable == False
 
             elif selectedJoint:
                 if selectedJoint.jointMotion.jointType == 0:
@@ -924,7 +921,6 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                 else:
                     wheel = _wheels[wheelTableInput.selectedRow - 1]
                     removeWheelFromTable(wheel)
-                    #gm.ui.activeSelections.removeByIndex(selectedRow)
 
             elif cmdInput.id == "joint_delete":
                addJointInput.isEnabled = True
@@ -946,7 +942,6 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                 else:
                     gamepiece = _gamepieces[gamepieceTableInput.selectedRow - 1]
                     removeGamePieceFromTable(gamepiece)
-                    #gm.ui.activeSelections.removeByIndex(selectedRow)
 
             elif cmdInput.id == "wheel_select":
                 wheelSelect.isEnabled = False
@@ -993,7 +988,6 @@ def occurrenceToken(occ):
         return occ.entityToken
 
 def addJointToTable(joint):
-    # get the CommandInputs object associated with the parent command.
     cmdInputs = adsk.core.CommandInputs.cast(jointTableInput.commandInputs)
 
     if joint.jointMotion.jointType == adsk.fusion.JointTypes.RigidJointType:
