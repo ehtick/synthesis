@@ -169,13 +169,13 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             Help File
             - Just an idea for adding additional instructions for user.
             """
-            cmd.helpFile = ""
+            cmd.helpFile = "src\Resources\HTML\example.html"
 
             """
             Export Mode
             """
-            # This could be a button group
             global dropdownExportMode
+
             dropdownExportMode = inputs.addDropDownCommandInput(
                 "mode",
                 "Export Mode",
@@ -313,7 +313,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             global jointConfig
 
             jointConfig = inputs.addGroupCommandInput("joint_config", "Joint Configuration")
-            jointConfig.isExpanded = False # later, change back to false
+            jointConfig.isExpanded = False
             jointConfig.isVisible = False
             jointConfig.tooltip = "Select and define joint occurrences in your assembly."
             joint_inputs = jointConfig.children
@@ -410,7 +410,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             removeFieldInput.isEnabled = True
 
             gamepieceSelectInput = gamepiece_inputs.addSelectionInput("gamepiece_select", "Selection", "Select the unique gamepieces in your field.")
-            gamepieceSelectInput.addSelectionFilter("Occurrences") # limit selection to only bodies
+            gamepieceSelectInput.addSelectionFilter("Occurrences") # limit selection to only occurrences
             gamepieceSelectInput.setSelectionLimits(0)
             gamepieceSelectInput.isEnabled = True
             gamepieceSelectInput.isVisible = False
@@ -658,21 +658,23 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
                     joint_name.append(i.name)
 
                 for row in range(wheelTableInput.rowCount):
-                    index = wheelTableInput.getInputAtPosition(row, 2).selectedItem.index
-                    
-                    if index == 0:
-                            _exportWheels.append(_Wheel(_wheels[row].entityToken, WheelType.STANDARD))
-                    elif index == 1:
-                            _exportWheels.append(_Wheel(_wheels[row].entityToken, WheelType.OMNI))
+                    if row != 0:
+                        index = wheelTableInput.getInputAtPosition(row, 2).selectedItem.index
+
+                        if index == 0:
+                                _exportWheels.append(_Wheel(_wheels[row-1].entityToken, WheelType.STANDARD))
+                        elif index == 1:
+                                _exportWheels.append(_Wheel(_wheels[row-1].entityToken, WheelType.OMNI))
 
                 for row in range(jointTableInput.rowCount):
-                    item = jointTableInput.getInputAtPosition(row, 2).selectedItem
+                    if row != 0:
+                        item = jointTableInput.getInputAtPosition(row, 2).selectedItem
 
-                    if item.name == "Root":
-                        _exportJoints.append(_Joint(_joints[row].entityToken, JointParentType.ROOT))
-                    else:
-                        index = joint_name.index(item.name)
-                        _exportJoints.append(_Joint(_joints[row].entityToken, _joints[index].entityToken))
+                        if item.name == "Root":
+                            _exportJoints.append(_Joint(_joints[row-1].entityToken, JointParentType.ROOT))
+                        else:
+                            index = joint_name.index(item.name)
+                            _exportJoints.append(_Joint(_joints[row-1].entityToken, _joints[index].entityToken))
 
                 options = ParseOptions(
                     savepath,
@@ -715,13 +717,11 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
             self.current.filePath = self.fp
             _general = self.current.general
             _advanced = self.current.advanced
-            # _vr = self.previous.vrSettings
 
             generalSettingsInputs = rootCommandInput.itemById("general_settings").children
             advancedSettingsInputs = rootCommandInput.itemById("advanced_settings").children
 
             if generalSettingsInputs and _general:
-                # vrSettingsInputs = generalSettingsInputs.itemById("vrSettings")
                 try:
                     _general.material.checked = generalSettingsInputs.itemById("materials").value
 
@@ -981,160 +981,178 @@ class MyCommandDestroyHandler(adsk.core.CommandEventHandler):
             gm.ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
 
 def occurrenceToken(occ):
-    if type(occ) == str:
-        return adsk.fusion.Design.cast(gm.app.activeProduct).findEntityByToken(occ)
-    
-    elif type(occ) == adsk.fusion.Joint:
-        return occ.entityToken
-    
-    elif type(occ) == adsk.fusion.Occurrence:
-        return occ.entityToken
+    try:
+        if type(occ) == str:
+            return adsk.fusion.Design.cast(gm.app.activeProduct).findEntityByToken(occ)
+
+        elif type(occ) == adsk.fusion.Joint:
+            return occ.entityToken
+
+        elif type(occ) == adsk.fusion.Occurrence:
+            return occ.entityToken
+    except:
+        if gm.ui:
+                gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
 
 def addJointToTable(joint):
-    cmdInputs = adsk.core.CommandInputs.cast(jointTableInput.commandInputs)
+    try:
+        cmdInputs = adsk.core.CommandInputs.cast(jointTableInput.commandInputs)
 
-    if joint.jointMotion.jointType == adsk.fusion.JointTypes.RigidJointType:
-        icon = cmdInputs.addImageCommandInput("placeholder", "Rigid", iconPaths["rigid"])
-        icon.tooltip = "Rigid joint"
+        if joint.jointMotion.jointType == adsk.fusion.JointTypes.RigidJointType:
+            icon = cmdInputs.addImageCommandInput("placeholder", "Rigid", iconPaths["rigid"])
+            icon.tooltip = "Rigid joint"
+
+        elif joint.jointMotion.jointType == adsk.fusion.JointTypes.RevoluteJointType:
+            icon = cmdInputs.addImageCommandInput("placeholder", "Revolute", iconPaths["revolute"])
+            icon.tooltip = "Revolute joint"
+
+        elif joint.jointMotion.jointType == adsk.fusion.JointTypes.SliderJointType:
+            icon = cmdInputs.addImageCommandInput("placeholder", "Slider", iconPaths["slider"])
+            icon.tooltip = "Slider joint"
     
-    elif joint.jointMotion.jointType == adsk.fusion.JointTypes.RevoluteJointType:
-        icon = cmdInputs.addImageCommandInput("placeholder", "Revolute", iconPaths["revolute"])
-        icon.tooltip = "Revolute joint"
-
-    elif joint.jointMotion.jointType == adsk.fusion.JointTypes.SliderJointType:
-        icon = cmdInputs.addImageCommandInput("placeholder", "Slider", iconPaths["slider"])
-        icon.tooltip = "Slider joint"
-  
-    name = cmdInputs.addTextBoxCommandInput("name", "Occurrence name", joint.name, 1, True)
-    name.tooltip = (
-        "Selection set"
-    )
-    jointType = cmdInputs.addDropDownCommandInput(
-        "joint_type",
-        "Joint Type",
-        dropDownStyle=adsk.core.DropDownStyles.LabeledIconDropDownStyle,
-    )
-    jointType.listItems.add(
-        "Root", True
-    )
-
-    # after each additional joint added, add joint to the dropdown of all preview rows/joints
-    for row in range(jointTableInput.rowCount):
-        if row != 0:
-            dropDown = jointTableInput.getInputAtPosition(row, 2)
-            dropDown.listItems.add(
-                _joints[-1].name, False
-            )
-    
-    # add all parent joint options to added joint dropdown
-    for j in range(len(_joints) - 1):
+        name = cmdInputs.addTextBoxCommandInput("name", "Occurrence name", joint.name, 1, True)
+        name.tooltip = (
+            "Selection set"
+        )
+        jointType = cmdInputs.addDropDownCommandInput(
+            "joint_type",
+            "Joint Type",
+            dropDownStyle=adsk.core.DropDownStyles.LabeledIconDropDownStyle,
+        )
         jointType.listItems.add(
-            _joints[j].name, True
+            "Root", True
         )
 
-    jointType.tooltip = (
-        "Select the parent joint."
-    )
+        # after each additional joint added, add joint to the dropdown of all preview rows/joints
+        for row in range(jointTableInput.rowCount):
+            if row != 0:
+                dropDown = jointTableInput.getInputAtPosition(row, 2)
+                dropDown.listItems.add(
+                    _joints[-1].name, False
+                )
 
-    row = jointTableInput.rowCount
-
-    jointTableInput.addCommandInput(icon, row, 0)
-    jointTableInput.addCommandInput(name, row, 1)
-    jointTableInput.addCommandInput(jointType, row, 2)
-
-def addWheelToTable(wheel):
-    cmdInputs = adsk.core.CommandInputs.cast(wheelTableInput.commandInputs)
-    icon = cmdInputs.addImageCommandInput("placeholder", "Placeholder", iconPaths["standard"])
-    name = cmdInputs.addTextBoxCommandInput("name", "Occurrence name", wheel.name, 1, True)
-    name.tooltip = (
-        "Selection set"
-    )
-    wheelType = cmdInputs.addDropDownCommandInput(
-        "wheel_type",
-        "Wheel Type",
-        dropDownStyle=adsk.core.DropDownStyles.LabeledIconDropDownStyle,
-    )
-    wheelType.listItems.add(
-        "Standard", True, ""
-    )
-    wheelType.listItems.add(
-        "Omni", False, ""
-    )
-    wheelType.tooltip = (
-        "Wheel type"
-    )
-    wheelType.tooltipDescription = (
-        "<Br>Omni-directional wheels can be used just like regular drive wheels but they have the advantage of being able to roll freely perpendicular to the drive direction.</Br>"
-    )
-    wheelType.toolClipFilename = (
-        "src\Resources\omni-wheel-preview.png"
-    )
-
-    row = wheelTableInput.rowCount
-
-    wheelTableInput.addCommandInput(icon, row, 0)
-    wheelTableInput.addCommandInput(name, row, 1)
-    wheelTableInput.addCommandInput(wheelType, row, 2)
-
-def addGamepieceToTable(gamepiece):
-    cmdInputs = adsk.core.CommandInputs.cast(gamepieceTableInput.commandInputs)
-    type = cmdInputs.addStringValueInput("gp_type", "GP-Type")
-    weight = cmdInputs.addValueInput("gp_weight", "Weight Input", "", adsk.core.ValueInput.createByString("0.0"))
-    friction_coeff = cmdInputs.addFloatSpinnerCommandInput("friction_coeff", "Friction", "", 0, 1, 0.1, 0.5)
-    #friction_coeff = cmdInputs.addFloatSliderCommandInput("friction_coeff", "Friction", "", 0, 1)
-
-    type.tooltip = (
-        "Type of field element."
-    )
-    type.tooltipDescription = (
-        "E.g. \"Ball\" or \"Tote\"."
-    )
-    weight.tooltip = (
-        "Weight of field element."
-    )
-    friction_coeff.tooltip = (
-        "Friction coefficient of field element."
-    )
-    friction_coeff.tooltipDescription = (
-        "Friction coefficients range from 0 (ice) to 1 (rubber)."
-    )
-    row = gamepieceTableInput.rowCount
-
-    gamepieceTableInput.addCommandInput(type, row, 0)
-    gamepieceTableInput.addCommandInput(weight, row, 1)
-    gamepieceTableInput.addCommandInput(friction_coeff, row, 2)
-
-def removeJointFromTable(joint):
-    index = _joints.index(joint)
-    _joints.remove(joint)
-
-    jointTableInput.deleteRow(index + 1)
-    
-    for row in range(jointTableInput.rowCount):
-        if row != 0:
-            dropDown = jointTableInput.getInputAtPosition(row, 2)
-            dropDown.listItems.clear()
-
-            dropDown.listItems.add(
-            "Root", False
+        # add all parent joint options to added joint dropdown
+        for j in range(len(_joints) - 1):
+            jointType.listItems.add(
+                _joints[j].name, True
             )
 
-            a = [x for i, x in enumerate(_joints) if i!=row-1]
+        jointType.tooltip = (
+            "Select the parent joint."
+        )
 
-            for joint in a:
+        row = jointTableInput.rowCount
+
+        jointTableInput.addCommandInput(icon, row, 0)
+        jointTableInput.addCommandInput(name, row, 1)
+        jointTableInput.addCommandInput(jointType, row, 2)
+    except:
+        if gm.ui:
+                gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
+
+def addWheelToTable(wheel):
+    try:
+        cmdInputs = adsk.core.CommandInputs.cast(wheelTableInput.commandInputs)
+        icon = cmdInputs.addImageCommandInput("placeholder", "Placeholder", iconPaths["standard"])
+        name = cmdInputs.addTextBoxCommandInput("name", "Occurrence name", wheel.name, 1, True)
+        name.tooltip = (
+            "Selection set"
+        )
+        wheelType = cmdInputs.addDropDownCommandInput(
+            "wheel_type",
+            "Wheel Type",
+            dropDownStyle=adsk.core.DropDownStyles.LabeledIconDropDownStyle,
+        )
+        wheelType.listItems.add(
+            "Standard", True, ""
+        )
+        wheelType.listItems.add(
+            "Omni", False, ""
+        )
+        wheelType.tooltip = (
+            "Wheel type"
+        )
+        wheelType.tooltipDescription = (
+            "<Br>Omni-directional wheels can be used just like regular drive wheels but they have the advantage of being able to roll freely perpendicular to the drive direction.</Br>"
+        )
+        wheelType.toolClipFilename = (
+            "src\Resources\omni-wheel-preview.png"
+        )
+
+        row = wheelTableInput.rowCount
+
+        wheelTableInput.addCommandInput(icon, row, 0)
+        wheelTableInput.addCommandInput(name, row, 1)
+        wheelTableInput.addCommandInput(wheelType, row, 2)
+    except:
+        if gm.ui:
+                gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
+
+def addGamepieceToTable(gamepiece):
+    try:
+        cmdInputs = adsk.core.CommandInputs.cast(gamepieceTableInput.commandInputs)
+        type = cmdInputs.addStringValueInput("gp_type", "GP-Type")
+        weight = cmdInputs.addValueInput("gp_weight", "Weight Input", "", adsk.core.ValueInput.createByString("0.0"))
+        friction_coeff = cmdInputs.addFloatSpinnerCommandInput("friction_coeff", "Friction", "", 0, 1, 0.1, 0.5)
+        #friction_coeff = cmdInputs.addFloatSliderCommandInput("friction_coeff", "Friction", "", 0, 1)
+
+        type.tooltip = (
+            "Type of field element."
+        )
+        type.tooltipDescription = (
+            "E.g. \"Ball\" or \"Tote\"."
+        )
+        weight.tooltip = (
+            "Weight of field element."
+        )
+        friction_coeff.tooltip = (
+            "Friction coefficient of field element."
+        )
+        friction_coeff.tooltipDescription = (
+            "Friction coefficients range from 0 (ice) to 1 (rubber)."
+        )
+        row = gamepieceTableInput.rowCount
+
+        gamepieceTableInput.addCommandInput(type, row, 0)
+        gamepieceTableInput.addCommandInput(weight, row, 1)
+        gamepieceTableInput.addCommandInput(friction_coeff, row, 2)
+    except:
+        if gm.ui:
+                gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
+
+def removeJointFromTable(joint):
+    try:
+        index = _joints.index(joint)
+        _joints.remove(joint)
+
+        jointTableInput.deleteRow(index + 1)
+
+        for row in range(jointTableInput.rowCount):
+            if row != 0:
+                dropDown = jointTableInput.getInputAtPosition(row, 2)
+                dropDown.listItems.clear()
+
                 dropDown.listItems.add(
-                    joint.name, False
+                "Root", False
                 )
-                
-            dropDown.listItems.item(row-1).isSelected = True
 
+                a = [x for i, x in enumerate(_joints) if i!=row-1]
+
+                for joint in a:
+                    dropDown.listItems.add(
+                        joint.name, False
+                    )
+
+                dropDown.listItems.item(row-1).isSelected = True
+    except:
+        if gm.ui:
+                gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
+            
 def removeWheelFromTable(wheel):
     try:
         index = _wheels.index(wheel)
         _wheels.remove(wheel)
         wheelTableInput.deleteRow(index + 1)
-    except ValueError:
-        pass
     except:
         if gm.ui:
                 gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
@@ -1144,8 +1162,6 @@ def removeGamePieceFromTable(gamepiece):
         index = _gamepieces.index(gamepiece)
         _gamepieces.remove(gamepiece)
         gamepieceTableInput.deleteRow(index + 1)
-    except ValueError:
-        pass
     except:
         if gm.ui:
                 gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
