@@ -638,7 +638,7 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
             elif selectedJoint:
                 if selectedJoint.jointMotion.jointType == 0:
                     #gm.ui.messageBox("rigid joint")
-                    gm.ui.messageBox(str(gm.ui.activeSelections.count))
+                    # gm.ui.messageBox(str(gm.ui.activeSelections.count))
                     gm.ui.activeSelections.removeBySelection(args.selection)
                 else:
                     _joints.append(selectedJoint)
