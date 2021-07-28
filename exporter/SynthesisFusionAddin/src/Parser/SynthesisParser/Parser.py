@@ -10,13 +10,12 @@ from proto.proto_out import assembly_pb2
 
 # from . import Joints, Materials, Components, Utilities
 
-from . import Materials, Components
+from . import Materials, Components, Joints, JointHierarchy
 
 from .Utilities import *
 
 
 class Parser:
-    """Parser for the Mira Buf format to use in AR or Simulation"""
 
     def __init__(self, options: any):
         """Creates a new parser with the supplied options
@@ -34,11 +33,10 @@ class Parser:
 
             assembly_out = assembly_pb2.Assembly()
             fill_info(assembly_out, design.rootComponent)
-            # assembly_out.data = mirabuf_pb2.AssemblyData()
+
             assembly_out.dynamic = True
+
             # Physical Props here when ready
-            # Leaf here when ready
-            # Leaf here when ready
 
             ts = time()
 
@@ -82,27 +80,55 @@ class Parser:
                 rootNode
             )
 
+            Joints.populateJoints(
+                design,
+                assembly_out.data.joints,
+                progressDialog,
+                self.parseOptions
+            )
+
+            Joints.createJointGraph(
+                self.parseOptions.joints,
+                assembly_out.joint_hierarchy
+            )
+
             assembly_out.design_hierarchy.nodes.append(rootNode)
-
-            """
-
-            Joints.ParseAllJoints(self.parseOptions, design, assembly_out.data)
-            """
 
             f = open(self.parseOptions.fileLocation, "wb")
             f.write(assembly_out.SerializeToString())
             f.close()
 
-            # Use websockets later ?
-
             progressDialog.hide()
 
-            part_defs = assembly_out.data.parts.part_definitions
-            parts = assembly_out.data.parts.part_instances
+            if DEBUG:
+                part_defs = assembly_out.data.parts.part_definitions
+                parts = assembly_out.data.parts.part_instances
+                joints = assembly_out.data.joints.joint_definitions
 
-            gm.ui.messageBox(
-                f"Materials: {len(assembly_out.data.materials.appearances)}\nPart-Definitions: {len(part_defs)}\nParts: {len(parts)}"
-            )
+                joint_hierarchy_out = "Joint Hierarchy :\n"
+
+                # This is just for testing
+                for node in assembly_out.joint_hierarchy.nodes:
+                    if node.value == "ground":
+                        joint_hierarchy_out = f"{joint_hierarchy_out}  |- ground\n"
+                    else:
+                        newnode = assembly_out.data.joints.joint_instances[node.value]
+                        jointdefinition = assembly_out.data.joints.joint_definitions[newnode.joint_reference]
+                        joint_hierarchy_out = f"{joint_hierarchy_out}  |- {jointdefinition.info.name} type: {jointdefinition.joint_motion_type}\n"
+
+                    for child in node.children:
+                        if child.value == "ground":
+                            joint_hierarchy_out = f"{joint_hierarchy_out} |--- ground\n"
+                        else:
+                            newnode = assembly_out.data.joints.joint_instances[child.value]
+                            jointdefinition = assembly_out.data.joints.joint_definitions[newnode.joint_reference]
+                            joint_hierarchy_out = f"{joint_hierarchy_out}  |--- {jointdefinition.info.name} type: {jointdefinition.joint_motion_type}\n"
+
+                joint_hierarchy_out += "\n\n"
+
+                gm.ui.messageBox(
+                    f"Materials: {len(assembly_out.data.materials.appearances)} \nPart-Definitions: {len(part_defs)} \nParts: {len(parts)} \nJoints: {len(joints)}\n {joint_hierarchy_out}"
+                )
 
         except:
             self.logger.error("Failed:\n{}".format(traceback.format_exc()))

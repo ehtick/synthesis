@@ -648,6 +648,7 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
                 version = design.rootComponent.name.rsplit(" ", 1)[1]
 
                 renderer = 0
+                #dropdown = adsk.core.DropDownCommandInput.cast(render_dropdown)
 
                 _exportWheels = []
                 _exportJoints = []
@@ -660,18 +661,18 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
                     index = wheelTableInput.getInputAtPosition(row, 2).selectedItem.index
                     
                     if index == 0:
-                            _exportWheels.append(_Wheel(_wheels[row], WheelType.STANDARD))
+                            _exportWheels.append(_Wheel(_wheels[row].entityToken, WheelType.STANDARD))
                     elif index == 1:
-                            _exportWheels.append(_Wheel(_wheels[row], WheelType.OMNI))
+                            _exportWheels.append(_Wheel(_wheels[row].entityToken, WheelType.OMNI))
 
                 for row in range(jointTableInput.rowCount):
                     item = jointTableInput.getInputAtPosition(row, 2).selectedItem
 
                     if item.name == "Root":
-                        _exportJoints.append(_Joint(_joints[row], JointParentType.ROOT))
+                        _exportJoints.append(_Joint(_joints[row].entityToken, JointParentType.ROOT))
                     else:
                         index = joint_name.index(item.name)
-                        _exportJoints.append(_Joint(_joints[row], _joints[index]))
+                        _exportJoints.append(_Joint(_joints[row].entityToken, _joints[index].entityToken))
 
                 options = ParseOptions(
                     savepath,
@@ -721,14 +722,16 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
 
             if generalSettingsInputs and _general:
                 # vrSettingsInputs = generalSettingsInputs.itemById("vrSettings")
+                try:
+                    _general.material.checked = generalSettingsInputs.itemById("materials").value
 
-                _general.material.checked = generalSettingsInputs.itemById(
-                    "materials"
-                ).value
-                _general.joints.checked = generalSettingsInputs.itemById("joints").value
-                _general.rigidGroups.checked = generalSettingsInputs.itemById(
-                    "rigidGroups"
-                ).value
+                    _general.joints.checked = generalSettingsInputs.itemById("joints").value
+                    _general.rigidGroups.checked = generalSettingsInputs.itemById(
+                        "rigidGroups"
+                    ).value
+                except:
+                    # this will force an error - ignore for now
+                    pass
 
             if advancedSettingsInputs and _advanced:
 
@@ -1066,6 +1069,7 @@ def addWheelToTable(wheel):
     wheelType.toolClipFilename = (
         "src\Resources\omni-wheel-preview.png"
     )
+
     row = wheelTableInput.rowCount
 
     wheelTableInput.addCommandInput(icon, row, 0)
