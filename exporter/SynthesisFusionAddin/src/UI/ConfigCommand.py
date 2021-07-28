@@ -761,21 +761,25 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
                             if occ not in _wheels:
                                 _wheels.append(occ)
                                 addWheelToTable(occ)
+                               # occ.isSelectable == False
                     else:
                         if selectedOcc not in _wheels:
                             _wheels.append(selectedOcc)
                             addWheelToTable(selectedOcc)
+                            #selectedOcc.isSelectable == False
                 elif dropdownExportMode.selectedItem.name == "Field":
                     if selectedOcc not in _gamepieces:    
                         _gamepieces.append(selectedOcc)
                         addGamepieceToTable(selectedOcc)
+                        #selectedOcc.isSelectable == False
 
             elif selectedJoint:
                 if selectedJoint.jointMotion.jointType == 0:
                     pass
                 else:
-                    _joints.append(selectedJoint)
-                    addJointToTable(selectedJoint)
+                    if selectedJoint not in _joints:
+                        _joints.append(selectedJoint)
+                        addJointToTable(selectedJoint)
 
         except:
             if gm.ui:
@@ -934,7 +938,7 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                    removeJointFromTable(joint)
 
             elif cmdInput.id == "field_delete":
-                addWheelInput.isEnabled = True
+                addFieldInput.isEnabled = True
 
                 if gamepieceTableInput.selectedRow == -1 or gamepieceTableInput.rowCount == 1:
                     gm.ui.messageBox(
@@ -1042,8 +1046,6 @@ def addJointToTable(joint):
     jointTableInput.addCommandInput(jointType, row, 2)
 
 def addWheelToTable(wheel):
-    wheel.isSelectable = False
-
     cmdInputs = adsk.core.CommandInputs.cast(wheelTableInput.commandInputs)
     icon = cmdInputs.addImageCommandInput("placeholder", "Placeholder", iconPaths["standard"])
     name = cmdInputs.addTextBoxCommandInput("name", "Occurrence name", wheel.name, 1, True)
@@ -1077,8 +1079,6 @@ def addWheelToTable(wheel):
     wheelTableInput.addCommandInput(wheelType, row, 2)
 
 def addGamepieceToTable(gamepiece):
-    gamepiece.isSelectable = False
-
     cmdInputs = adsk.core.CommandInputs.cast(gamepieceTableInput.commandInputs)
     type = cmdInputs.addStringValueInput("gp_type", "GP-Type")
     weight = cmdInputs.addValueInput("gp_weight", "Weight Input", "", adsk.core.ValueInput.createByString("0.0"))
@@ -1127,11 +1127,10 @@ def removeJointFromTable(joint):
                 dropDown.listItems.add(
                     joint.name, False
                 )
+                
             dropDown.listItems.item(row-1).isSelected = True
 
 def removeWheelFromTable(wheel):
-    wheel.isSelectable = True
-
     try:
         index = _wheels.index(wheel)
         _wheels.remove(wheel)
@@ -1143,8 +1142,6 @@ def removeWheelFromTable(wheel):
                 gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
 
 def removeGamePieceFromTable(gamepiece):
-    gamepiece.isSelectable = True
-
     try:
         index = _gamepieces.index(gamepiece)
         _gamepieces.remove(gamepiece)
