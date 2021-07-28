@@ -531,7 +531,7 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
                         _exportJoints.append(_Joint(_joints[row].entityToken, JointParentType.ROOT))
                     else:
                         index = joint_name.index(item.name)
-                        _exportJoints.append(_Joint(_joints[row].entityToken, _joints[index]))
+                        _exportJoints.append(_Joint(_joints[row].entityToken, _joints[index].entityToken))
 
                 # now construct a ParseOptions and save the file
                 # since self.current is already up to date might as well use it
