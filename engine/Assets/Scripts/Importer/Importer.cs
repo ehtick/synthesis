@@ -181,10 +181,10 @@ namespace Synthesis.Import {
             }
             foreach (var kvp in parts.PartInstances) {
                 if (!partToGroupMap.ContainsKey(kvp.Key)) {
-                    string name = $"single_grouping:{kvp.Key}";
+                    string name = $"single_grouping:{kvp.Value.Info.Name}";
                     var singleGroup = new RigidGroup {Name = name};
                     singleGroup.Occurrences.Add(kvp.Key);
-                    groupings.Add(name, singleGroup);
+                    groupings.Add($"single_grouping:{kvp.Key}", singleGroup);
                     partToGroupMap.Add(kvp.Key, name);
                 }
             }
@@ -194,7 +194,7 @@ namespace Synthesis.Import {
             collidersToIgnore = new List<Collider>();
             
             foreach (var group in groupings) {
-                GameObject groupObject = new GameObject(group.Key);
+                GameObject groupObject = new GameObject(group.Value.Name);
                 foreach (var part in group.Value.Occurrences) {
                     var partInstance = parts.PartInstances[part];
                     var partDefinition = parts.PartDefinitions[partInstance.PartDefinitionReference];

@@ -23,6 +23,7 @@ namespace Mirabuf.Material {
                         _unityMaterial.renderQueue = 3000;
                     }
                     _unityMaterial.SetFloat("_Roughness", (float)Roughness);
+                    _unityMaterial.enableInstancing = true;
                     // TODO: Specular and Metallic
                 }
                 return _unityMaterial;

@@ -30,6 +30,7 @@ public class PTL : MonoBehaviour {
         // POWER_UP = ParsePath("$appdata/Autodesk/Synthesis/Fields/2018 Power Up");
 
         string miraTest = ParsePath("$appdata/Autodesk/Synthesis/TestingExports/chair_v8.mira");
+        // string miraTest = ParsePath("$appdata/Autodesk/Synthesis/TestingExports/1425-2019_v20.mira");
         GameObject assemblyObject = Importer.AssemblyImport(File.ReadAllBytes(miraTest));
 
         // SpawnRobot(MEAN_MACHINE);
