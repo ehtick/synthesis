@@ -143,6 +143,8 @@
     <Compile Include="Assets\Scripts\Engine\ModuleLoader\Adapters\AudioSourceAdapter.cs" />
     <Compile Include="Assets\Scripts\Importer\Importer.cs" />
     <Compile Include="Assets\Scripts\RobotButtons.cs" />
+    <Compile Include="Assets\Scripts\UI\Panels\Variants\InputMenu\InputPanel.cs" />
+    <Compile Include="Assets\Scripts\UI\Panels\Variants\InputMenu\InputMenuInput.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Scripts\CoreEngine.asmdef" />
