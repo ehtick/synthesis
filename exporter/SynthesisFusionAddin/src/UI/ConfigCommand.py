@@ -24,6 +24,7 @@ from types import SimpleNamespace
 File to generate and link the Configuration Command seen when pressing the button from the Addins Panel
 """
 previous = None
+cmd = None
 
 # group globals
 wheelConfig = adsk.core.GroupCommandInput.cast(None)
@@ -118,6 +119,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 A_EP.send_view("export_panel")
 
             eventArgs = adsk.core.CommandCreatedEventArgs.cast(args)
+            global cmd
             cmd = eventArgs.command
 
             # Set to false so won't automatically export on switch context
@@ -132,9 +134,21 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             cmd.inputChanged.add(onInputChanged)
             gm.handlers.append(onInputChanged)
 
+            onExecutePreview = CommandExecutePreviewHandler()
+            cmd.executePreview.add(onExecutePreview)
+            gm.handlers.append(onExecutePreview)
+
             onSelect = MySelectHandler()
             cmd.select.add(onSelect)
-            gm.handlers.append(onSelect) 
+            gm.handlers.append(onSelect)
+
+            onPreSelect = MyPreSelectHandler()
+            cmd.preSelect.add(onPreSelect)
+            gm.handlers.append(onPreSelect)
+
+            onPreSelectEnd = MyPreselectEndHandler()
+            cmd.preSelectEnd.add(onPreSelectEnd)
+            gm.handlers.append(onPreSelectEnd)
             
             #onUnSelect = MyUnSelectHandler()
             #cmd.unselect.add(onUnSelect)            
@@ -170,6 +184,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             - Just an idea for adding additional instructions for user.
             """
             cmd.helpFile = "src\Resources\HTML\example.html"
+            #cmd.helpFile = "README.md"
 
             """
             Export Mode
@@ -200,7 +215,6 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 1
             )
             weightTableInput.tablePresentationStyle = 2
-            weightTableInput.columnSpacing = 0
 
             weight_name = inputs.addStringValueInput("weight_name", "Weight")
             weight_name.value = "Weight"
@@ -266,7 +280,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 wheel_inputs,
                 3,
                 "1:3:2",
-                10,
+                11,
             )
 
             addWheelInput = wheel_inputs.addBoolValueInput(
@@ -289,11 +303,8 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             wheelTableInput.addToolbarCommandInput(addWheelInput)
             wheelTableInput.addToolbarCommandInput(removeWheelInput)
 
-            header2 = wheel_inputs.addTextBoxCommandInput("name_header", "Name", "<div align='left'><p style='font-size:{}px'><b><i>{}</i></b></p>".format(fontSize, "Component name"), 1, True)
-            header3 = wheel_inputs.addTextBoxCommandInput("parent_header", "Parent", "<div align='left'><p style='font-size:{}px'><b><i>{}</i></b></p>".format(fontSize, "Wheel type"), 1, True)
-
-            wheelTableInput.addCommandInput(header2, 0, 1)
-            wheelTableInput.addCommandInput(header3, 0, 2)
+            wheelTableInput.addCommandInput(self.createTextBoxInput("name_header", "Name", wheel_inputs, "Component name", True, True, fontSize), 0, 1)
+            wheelTableInput.addCommandInput(self.createTextBoxInput("parent_header", "Parent", wheel_inputs, "Wheel type", True, True, fontSize), 0, 2)
 
             """
             Simple wheel export button
@@ -350,11 +361,9 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             jointTableInput.addToolbarCommandInput(addJointInput)
             jointTableInput.addToolbarCommandInput(removeJointInput)
 
-            header2 = joint_inputs.addTextBoxCommandInput("name_header", "Name", "<div align='left'><p style='font-size:{}px'><b><i>{}</i></b></p>".format(fontSize, "Joint name"), 1, True)
-            header3 = joint_inputs.addTextBoxCommandInput("parent_header", "Parent", "<div align='left'><p style='font-size:{}px'><b><i>{}</i></b></p>".format(fontSize, "Possible parent joints"), 1, True)
-
-            jointTableInput.addCommandInput(header2, 0, 1)
-            jointTableInput.addCommandInput(header3, 0, 2)
+            jointTableInput.addCommandInput(self.createTextBoxInput("motion_header", "Joint motion", joint_inputs, "Motion", True, True, fontSize), 0, 0)
+            jointTableInput.addCommandInput(self.createTextBoxInput("name_header", "Name", joint_inputs, "Joint name", True, True, fontSize), 0, 1)
+            jointTableInput.addCommandInput(self.createTextBoxInput("parent_header", "Parent", joint_inputs, "Possible parent joints", True, True, fontSize), 0, 2)
 
             for joint in gm.app.activeDocument.design.rootComponent.allJoints:
                 if joint.isLightBulbOn == True:
@@ -418,13 +427,9 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             gamepieceTableInput.addToolbarCommandInput(addFieldInput)
             gamepieceTableInput.addToolbarCommandInput(removeFieldInput)
 
-            header1 = gamepiece_inputs.addTextBoxCommandInput("w_header", "Gamepiece weight", "<div align='left'><p style='font-size:{}px'><b><i>{}</i></b></p>".format(fontSize, "Element"), 1, True)
-            header2 = gamepiece_inputs.addTextBoxCommandInput("w_header", "Gamepiece weight", "<div align='left'><p style='font-size:{}px'><b><i>{}</i></b></p>".format(fontSize, "Weight"), 1, True)
-            header3 = gamepiece_inputs.addTextBoxCommandInput("f_header", "Friction", "<div align='left'><p style='font-size:{}px'><b><i>{}</i></b></p>".format(fontSize, "Friction coefficient"), 1, True)
-
-            gamepieceTableInput.addCommandInput(header1, 0, 0)
-            gamepieceTableInput.addCommandInput(header2, 0, 1)
-            gamepieceTableInput.addCommandInput(header3, 0, 2)
+            gamepieceTableInput.addCommandInput(self.createTextBoxInput("e_header", "Gamepiece weight", gamepiece_inputs, "Element", True, True, fontSize), 0, 0)
+            gamepieceTableInput.addCommandInput(self.createTextBoxInput("w_header", "Gamepiece weight", gamepiece_inputs, "Weight", True, True, fontSize), 0, 1)
+            gamepieceTableInput.addCommandInput(self.createTextBoxInput("f_header", "Friction coefficient", gamepiece_inputs, "Friction coefficient (0 to 1)", True, True, fontSize), 0, 2)
             
             """
             ~ Advanced Tab ~
@@ -561,13 +566,40 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
         columns: int,
         ratio: str,
         maxRows: int,
-        minRows=1
+        minRows=1,
+        columnSpacing=0
         ) -> adsk.core.TableCommandInput: # accepts an occurrence (wheel)
             _input = inputs.addTableCommandInput(_id, name, columns, ratio)
             _input.minimumVisibleRows = minRows
             _input.maximumVisibleRows = maxRows
+            _input.columnSpacing = columnSpacing
             return _input
 
+    def createTextBoxInput(
+        self,
+        _id: str,
+        name: str,
+        inputs: adsk.core.CommandInputs,
+        text: str,
+        italics: bool,
+        bold: bool,
+        fontSize: int,
+        alignment="left",
+        rowCount=1,
+        read=True
+        ) -> adsk.core.TextBoxCommandInput:
+        
+        if italics and not bold:
+            _text = "<div align='{}'><p style='font-size:{}px'><i>{}</i></p>".format(alignment, fontSize, text)
+        elif bold and not italics:
+            _text = "<div align='{}'><p style='font-size:{}px'><b>{}</b></p>".format(alignment, fontSize, text)
+        elif bold and italics:
+            _text = "<body style='background-color:whitesmoke;'><div align='{}'><p style='font-size:{}px'><b><i>{}</i></b></p></body>".format(alignment, fontSize, text)
+        else:
+            _text = "<div align='{}'><p style='font-size:{}px'>{}</p>".format(alignment, fontSize, text)
+
+        _input = inputs.addTextBoxCommandInput(_id, name, _text, rowCount, read)
+        return _input
 
 class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
     """Called when Ok is pressed confirming the export to Unity.
@@ -748,6 +780,26 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
                 ).value
                 _advanced.com.checked = advancedSettingsInputs.itemById("com").value
 
+class CommandExecutePreviewHandler(adsk.core.CommandEventHandler):
+    def __init__(self) -> None:
+        super().__init__()
+    def notify(self, args):
+        try:
+            eventArgs = adsk.core.CommandEventArgs.cast(args)
+            inputs = eventArgs.command.commandInputs
+
+            #for command in inputs:
+            #    gm.ui.messageBox(command)
+
+            for occ in gm.app.activeDocument.design.rootComponent.allOccurrences:
+                if occ in _wheels:
+                    occ.component.opacity = 0.25 # opacity disappears immediately??
+                elif occ not in _wheels:
+                    occ.component.opacity = 1
+        except:
+            if gm.ui:
+                gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
+
 
 class MySelectHandler(adsk.core.SelectionEventHandler):
     def __init__(self):
@@ -757,9 +809,12 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
             selectedOcc = adsk.fusion.Occurrence.cast(args.selection.entity)
             selectedJoint = adsk.fusion.Joint.cast(args.selection.entity)
 
+            #if len(_wheels) >= 11:
+            #    return
+
             if selectedOcc:
                 if dropdownExportMode.selectedItem.name == "Robot":
-                    if duplicateSelection.value == True:
+                    if duplicateSelection.value == True:# and selectedOcc.isReferencedComponent :
                         for occ in gm.app.activeDocument.design.rootComponent.occurrencesByComponent(selectedOcc.component):   
                             if occ not in _wheels:
                                 _wheels.append(occ)
@@ -768,6 +823,7 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
                         if selectedOcc not in _wheels:
                             _wheels.append(selectedOcc)
                             addWheelToTable(selectedOcc)
+
                 elif dropdownExportMode.selectedItem.name == "Field":
                     if selectedOcc not in _gamepieces:    
                         _gamepieces.append(selectedOcc)
@@ -781,6 +837,37 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
                         _joints.append(selectedJoint)
                         addJointToTable(selectedJoint)
 
+        except:
+            if gm.ui:
+                gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
+
+
+class MyPreSelectHandler(adsk.core.SelectionEventHandler):
+    def __init__(self):
+        super().__init__()
+    def notify(self, args):
+        try:
+            design = adsk.fusion.Design.cast(gm.app.activeProduct)
+            preSelectedOcc = adsk.fusion.Occurrence.cast(args.selection.entity)
+
+            if preSelectedOcc and design:
+                if (preSelectedOcc in _wheels) or (preSelectedOcc in _gamepieces):
+                    cmd.setCursor("src/Resources/no-cursor30x30.png", 0, 0)
+        except:
+            if gm.ui:
+                gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
+
+
+class MyPreselectEndHandler(adsk.core.SelectionEventHandler):
+    def __init__(self):
+        super().__init__()
+    def notify(self, args):
+        try:
+            design = adsk.fusion.Design.cast(gm.app.activeProduct)
+            preSelectedOcc = adsk.fusion.Occurrence.cast(args.selection.entity)
+
+            if preSelectedOcc and design:
+                cmd.setCursor("", 0, 0)
         except:
             if gm.ui:
                 gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
@@ -856,10 +943,14 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                     if gamepieceConfig:
                         gm.ui.activeSelections.clear()
                         gamepieceConfig.isVisible = False
-                        jointConfig.isVisible = \
                         exportJoints.isVisible = \
                         wheelConfig.isVisible = \
                         weightTableInput.isVisible = True
+
+                        if exportJoints.value == True:
+                            jointConfig.isVisible = True
+                        else:
+                            jointConfig.isVisible = False
 
                 elif modeDropdown.selectedItem.name == "Field":
                     if gamepieceConfig:
@@ -899,12 +990,6 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                 wheelSelect.isEnabled = True
                 addWheelInput.isEnabled = False
 
-                for occ in gm.app.activeDocument.design.rootComponent.allOccurrences:
-                    if occ in _wheels:
-                        pass
-                    else:
-                        occ.component.opacity = 0.25 # opacity disappears immediately??
-
             elif cmdInput.id == "joint_add":
                 addWheelInput.isEnabled = True
 
@@ -918,7 +1003,7 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
             elif cmdInput.id == "wheel_delete":
                 addWheelInput.isEnabled = True
                 
-                if wheelTableInput.selectedRow == -1 or wheelTableInput.rowCount == 1:
+                if wheelTableInput.selectedRow == -1 or wheelTableInput.selectedRow == 0:
                     gm.ui.messageBox(
                         "Select one row to delete.")
                 else:
@@ -929,7 +1014,7 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                addJointInput.isEnabled = True
                addWheelInput.isEnabled = True
                
-               if jointTableInput.selectedRow == -1 or jointTableInput.rowCount == 1:
+               if jointTableInput.selectedRow == -1 or jointTableInput.selectedRow == 0:
                    gm.ui.messageBox(
                        "Select one row to delete.")
                else:
@@ -939,7 +1024,7 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
             elif cmdInput.id == "field_delete":
                 addFieldInput.isEnabled = True
 
-                if gamepieceTableInput.selectedRow == -1 or gamepieceTableInput.rowCount == 1:
+                if gamepieceTableInput.selectedRow == -1 or gamepieceTableInput.selectedRow == 0:
                     gm.ui.messageBox(
                         "Select one row to delete.")
                 else:
@@ -976,6 +1061,7 @@ class MyCommandDestroyHandler(adsk.core.CommandEventHandler):
         try:
             _wheels.clear()
             _joints.clear()
+            _gamepieces.clear()
             gm.ui.activeSelections.clear()
         except:
             gm.ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
@@ -1052,6 +1138,28 @@ def addJointToTable(joint):
 
 def addWheelToTable(wheel):
     try:
+        #if len(_wheels) > 10:
+        #    isValid = False
+        #    while not isValid:
+        #        (input, isCancelled) = gm.ui.inputBox(
+        #        "The maximum number of occurrence selections has been reached.\n\
+        #        Cancel the dialog or expand the maximum selection size.\n", 
+        #        "Maximum selection error", "10"
+        #        )
+        #        if isCancelled:
+        #            return False
+        #        unitsManager = gm.app.activeDocument.design.unitsManager
+
+        #        try:
+        #            realValue = unitsManager.evaluateExpression(input, unitsManager.defaultLengthUnits)
+        #            isValid = True
+        #        except:
+        #            #adsk.core.MessageBoxIconTypes.CriticalIconType
+        #            #adsk.core.MessageBoxButtonTypes.OKCancelButtonType
+        #            isValid = False
+        #        finally:
+        #            gm.ui.messageBox(str(realValue))
+
         cmdInputs = adsk.core.CommandInputs.cast(wheelTableInput.commandInputs)
         icon = cmdInputs.addImageCommandInput("placeholder", "Placeholder", iconPaths["standard"])
         name = cmdInputs.addTextBoxCommandInput("name", "Occurrence name", wheel.name, 1, True)
@@ -1093,9 +1201,15 @@ def addGamepieceToTable(gamepiece):
         cmdInputs = adsk.core.CommandInputs.cast(gamepieceTableInput.commandInputs)
         type = cmdInputs.addStringValueInput("gp_type", "GP-Type")
         weight = cmdInputs.addValueInput("gp_weight", "Weight Input", "", adsk.core.ValueInput.createByString("0.0"))
-        friction_coeff = cmdInputs.addFloatSpinnerCommandInput("friction_coeff", "Friction", "", 0, 1, 0.1, 0.5)
-        #friction_coeff = cmdInputs.addFloatSliderCommandInput("friction_coeff", "Friction", "", 0, 1)
+        
+        valueList = [1]
+        for i in range(20): valueList.append(i/20)
 
+        friction_coeff = cmdInputs.addFloatSliderListCommandInput("friction_coeff", "", "", valueList)
+        friction_coeff.isFullWidth = True
+        #friction_coeff.setText("0", "1")
+        friction_coeff.valueOne = 0.5
+        
         type.tooltip = (
             "Type of field element."
         )
