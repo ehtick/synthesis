@@ -750,8 +750,8 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
                         row, 3
                     ).selectedItem.index
 
-                    wheelType = WheelType(wheelTypeIndex)
-                    signalType = SignalType(signalTypeIndex)
+                    wheelType = wheelTypeIndex # This must be either 0 or 1 for standard or omni
+                    signalType = signalTypeIndex
 
                     _exportWheels.append(
                         _Wheel(_wheels[row-1].entityToken, wheelType, signalType)
@@ -769,18 +769,18 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
                             row, 3
                         ).selectedItem.index
 
-                        parentJointToken = str
-                        signalType = SignalType(signalTypeIndex)
+                        parentJointToken = "" 
+                        signalType = signalTypeIndex
 
                         if parentJointIndex == 0:
                             _exportJoints.append(
-                                _Joint(_joints[row - 1].entityToken, JointParentType.ROOT, signalType)
+                                _Joint(_joints[row - 1].entityToken, JointParentType.ROOT, signalType) # Root
                             )
                             continue
                         elif parentJointIndex < row:
-                            parentJointToken = _joints[parentJointIndex-1].entityToken
+                            parentJointToken = _joints[parentJointIndex-1].entityToken # str
                         else:
-                            parentJointToken = _joints[parentJointIndex+1].entityToken
+                            parentJointToken = _joints[parentJointIndex+1].entityToken # str
 
                         _exportJoints.append(
                                 _Joint(_joints[row - 1].entityToken, parentJointToken, signalType)
