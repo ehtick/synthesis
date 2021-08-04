@@ -190,11 +190,8 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             """
             Export Joints
             """
-            EXPORT_JOINTS = {
-
-            }
-
-            self.createBooleanInput(
+            global exportJoints
+            exportJoints = self.createBooleanInput(
                 "export_joints",
                 "Export Joints",
                 inputs,
@@ -239,7 +236,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 "Wheel Table",
                 wheel_inputs,
                 4,
-                "1:3:2:2",
+                "1:2:2:1",
                 11,
             )
 
@@ -273,7 +270,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 "parent_header", "Parent", wheel_inputs, "Wheel type", background="#d9d9d9"), 0, 2)
 
             wheelTableInput.addCommandInput(self.createTextBoxInput(
-                "signal_header", "Signal", wheel_inputs, "Signal Type", background="#d9d9d9"), 0, 3)
+                "signal_header", "Signal", wheel_inputs, "Signal type", background="#d9d9d9"), 0, 3)
 
 
             """
@@ -608,12 +605,14 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
         ratio: str,
         maxRows: int,
         minRows=1,
-        columnSpacing=0
+        columnSpacing=0,
+        rowSpacing=0
         ) -> adsk.core.TableCommandInput: # accepts an occurrence (wheel)
             _input = inputs.addTableCommandInput(_id, name, columns, ratio)
             _input.minimumVisibleRows = minRows
             _input.maximumVisibleRows = maxRows
             _input.columnSpacing = columnSpacing
+            _input.rowSpacing = rowSpacing
             return _input
 
     def createTextBoxInput(
@@ -625,7 +624,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
         italics=True,
         bold=True,
         fontSize=10,
-        alignment="left",
+        alignment="center",
         rowCount=1,
         read=True,
         background="whitesmoke"
@@ -758,33 +757,34 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
                         _Wheel(_wheels[row-1].entityToken, wheelType, signalType)
                     )
 
-                for row in range(jointTableInput.rowCount):
-                    if row == 0: continue
+                if exportJoints.value:
+                    for row in range(jointTableInput.rowCount):
+                        if row == 0: continue
 
-                    parentJointIndex = jointTableInput.getInputAtPosition(
-                        row, 2
-                    ).selectedItem.index
+                        parentJointIndex = jointTableInput.getInputAtPosition(
+                            row, 2
+                        ).selectedItem.index
 
-                    signalTypeIndex = jointTableInput.getInputAtPosition(
-                        row, 3
-                    ).selectedItem.index
+                        signalTypeIndex = jointTableInput.getInputAtPosition(
+                            row, 3
+                        ).selectedItem.index
 
-                    parentJointToken = str
-                    signalType = SignalType(signalTypeIndex)
+                        parentJointToken = str
+                        signalType = SignalType(signalTypeIndex)
 
-                    if parentJointIndex == 0:
+                        if parentJointIndex == 0:
+                            _exportJoints.append(
+                                _Joint(_joints[row - 1].entityToken, JointParentType.ROOT, signalType)
+                            )
+                            continue
+                        elif parentJointIndex < row:
+                            parentJointToken = _joints[parentJointIndex-1].entityToken
+                        else:
+                            parentJointToken = _joints[parentJointIndex+1].entityToken
+
                         _exportJoints.append(
-                            _Joint(_joints[row - 1].entityToken, JointParentType.ROOT, signalType)
+                                _Joint(_joints[row - 1].entityToken, parentJointToken, signalType)
                         )
-                        continue
-                    elif parentJointIndex < row:
-                        parentJointToken = _joints[parentJointIndex-1].entityToken
-                    else:
-                        parentJointToken = _joints[parentJointIndex+1].entityToken
-
-                    _exportJoints.append(
-                            _Joint(_joints[row - 1].entityToken, parentJointToken, signalType)
-                    )
 
                 options = ParseOptions(
                     savepath,
@@ -872,6 +872,19 @@ class CommandExecutePreviewHandler(adsk.core.CommandEventHandler):
         try:
             eventArgs = adsk.core.CommandEventArgs.cast(args)
             inputs = eventArgs.command.commandInputs
+
+            if wheelTableInput.rowCount == 1:
+                removeWheelInput.isEnabled = False
+            else:
+                removeWheelInput.isEnabled = True
+            if jointTableInput.rowCount == 1:
+                removeJointInput.isEnabled = False
+            else:
+                removeJointInput.isEnabled = True
+            if gamepieceTableInput.rowCount == 1:
+                removeFieldInput.isEnabled = False
+            else:
+                removeFieldInput.isEnabled = True
 
             if not addWheelInput.isEnabled:
                 for wheel in _wheels:
@@ -1060,6 +1073,9 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                     occ.component.opacity = 1
 
             elif cmdInput.id == "placeholder_w" or cmdInput.id == "name_w":
+                cmd.setCursor("", 0, 0)
+                wheelSelect.isEnabled = False
+
                 addWheelInput.isEnabled = True
                 
                 position = int
@@ -1074,6 +1090,8 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                 gm.ui.activeSelections.add(_wheels[position])
 
             elif cmdInput.id == "blank_gp" or cmdInput.id == "name_gp" or cmdInput.id == "weight_gp" or cmdInput.id == "friction_coeff":
+                cmd.setCursor("", 0, 0)
+                gamepieceSelect.isEnabled = False
                 addFieldInput.isEnabled = True
                 
                 position = int
@@ -1092,6 +1110,8 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                 gm.ui.activeSelections.add(_gamepieces[position])
 
             elif cmdInput.id == "wheel_type":
+                cmd.setCursor("", 0, 0)
+                wheelSelect.isEnabled = False
                 addWheelInput.isEnabled = True
                 position = int
                 cmdInput_str = cmdInput.id
@@ -1144,9 +1164,9 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
 
                 addWheelInput.isEnabled = True
                 
-                if wheelTableInput.selectedRow == -1 or wheelTableInput.selectedRow == 0:
+                if wheelTableInput.selectedRow == -1:
                     gm.ui.messageBox(
-                        "Select one row to delete.")
+                        "Select a row to delete.")
                 else:
                     wheel = _wheels[wheelTableInput.selectedRow - 1]
                     removeWheelFromTable(wheel)
@@ -1157,9 +1177,9 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                 addJointInput.isEnabled = True
                 addWheelInput.isEnabled = True
 
-                if jointTableInput.selectedRow == -1 or jointTableInput.selectedRow == 0:
+                if jointTableInput.selectedRow == -1:
                     gm.ui.messageBox(
-                        "Select one row to delete.")
+                        "Select a row to delete.")
                 else:
                     joint = _joints[jointTableInput.selectedRow - 1]
                     removeJointFromTable(joint)
@@ -1169,9 +1189,9 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
 
                 addFieldInput.isEnabled = True
 
-                if gamepieceTableInput.selectedRow == -1 or gamepieceTableInput.selectedRow == 0:
+                if gamepieceTableInput.selectedRow == -1:
                     gm.ui.messageBox(
-                        "Select one row to delete.")
+                        "Select a row to delete.")
                 else:
                     gamepiece = _gamepieces[gamepieceTableInput.selectedRow - 1]
                     removeGamePieceFromTable(gamepiece)
