@@ -1,5 +1,5 @@
 from logging import PlaceHolder
-from os import dup, fdopen, remove
+from os import dup, fdopen, remove, strerror
 from typing import Type
 from proto.proto_out.joint_pb2 import Joint
 from ..general_imports import *
@@ -7,7 +7,7 @@ from ..configure import NOTIFIED, write_configuration
 from ..Analytics.alert import showAnalyticsAlert
 from . import Helper, FileDialogConfig, OsHelper
 
-from ..Parser.ParseOptions import ParseOptions, _Joint, _Wheel, WheelType, JointParentType
+from ..Parser.ParseOptions import ParseOptions, SignalType, _Joint, _Wheel, WheelType, JointParentType
 from .Configuration.SerialCommand import (
     Struct,
     SerialCommand,
@@ -119,15 +119,6 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             cmd.isExecutedWhenPreEmpted = False
             cmd.okButtonText = "Export"
 
-            onExecute = ConfigureCommandExecuteHandler(
-                json.dumps(
-                    previous, default=lambda o: o.__dict__, sort_keys=True, indent=1
-                ),
-                previous.filePath,
-            )
-            cmd.execute.add(onExecute)
-            gm.handlers.append(onExecute)
-
             inputs_root = cmd.commandInputs
 
             """
@@ -147,9 +138,6 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             """
             Export Mode
             """
-            EXPORT_MODE = {
-                
-            }
 
             global dropdownExportMode
 
@@ -168,9 +156,6 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             """
             Weight Configuration
             """
-            WEIGHT_CONFIGURATION = {
-
-            }
 
             weightTableInput = self.createTableInput(
                 "weight_table", "Weight Table", inputs, 3, "5:3:2", 1
@@ -222,9 +207,6 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             """
             Wheel Configuration
             """
-            WEIGHT_CONFIGURATION = {
-
-            }
 
             wheelConfig = inputs.addGroupCommandInput(
                 "wheel_config", "Wheel Configuration"
@@ -284,9 +266,15 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             wheelTableInput.addToolbarCommandInput(addWheelInput)
             wheelTableInput.addToolbarCommandInput(removeWheelInput)
 
-            wheelTableInput.addCommandInput(self.createTextBoxInput("name_header", "Name", wheel_inputs, "Component name", True, True), 0, 1)
-            wheelTableInput.addCommandInput(self.createTextBoxInput("parent_header", "Parent", wheel_inputs, "Wheel type", True, True), 0, 2)
-            wheelTableInput.addCommandInput(self.createTextBoxInput("signal_header", "Signal", wheel_inputs, "Signal Type", True, True), 0, 3)
+            wheelTableInput.addCommandInput(self.createTextBoxInput(
+                "name_header", "Name", wheel_inputs, "Component name", bold=False), 0, 1)
+
+            wheelTableInput.addCommandInput(self.createTextBoxInput(
+                "parent_header", "Parent", wheel_inputs, "Wheel type", background="#d9d9d9"), 0, 2)
+
+            wheelTableInput.addCommandInput(self.createTextBoxInput(
+                "signal_header", "Signal", wheel_inputs, "Signal Type", background="#d9d9d9"), 0, 3)
+
 
             """
             Simple wheel export button
@@ -303,9 +291,6 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             """
             Joint Configuration
             """
-            JOINT_CONFIGURATION = {
-                
-            }
 
             global jointConfig
 
@@ -324,7 +309,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 "Joint Table",
                 joint_inputs,
                 4,
-                "1:2:2:2",
+                "1:2:2:1",
                 50,
             )
 
@@ -353,10 +338,17 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             jointTableInput.addToolbarCommandInput(addJointInput)
             jointTableInput.addToolbarCommandInput(removeJointInput)
 
-            jointTableInput.addCommandInput(self.createTextBoxInput("motion_header", "Joint motion", joint_inputs, "Motion", True, True), 0, 0)
-            jointTableInput.addCommandInput(self.createTextBoxInput("name_header", "Name", joint_inputs, "Joint name", True, True), 0, 1)
-            jointTableInput.addCommandInput(self.createTextBoxInput("parent_header", "Parent", joint_inputs, "Possible parent joints", True, True), 0, 2)
-            jointTableInput.addCommandInput(self.createTextBoxInput("signal_header", "Signal", joint_inputs, "Signal Type", True, True), 0, 3)
+            jointTableInput.addCommandInput(self.createTextBoxInput(
+                "motion_header", "Joint motion", joint_inputs, "Joint motion", bold=False), 0, 0)
+
+            jointTableInput.addCommandInput(self.createTextBoxInput(
+                "name_header", "Name", joint_inputs, "Joint name", bold=False), 0, 1)
+
+            jointTableInput.addCommandInput(self.createTextBoxInput(
+                "parent_header", "Parent", joint_inputs, "Possible parent joints", background="#d9d9d9"), 0, 2)
+
+            jointTableInput.addCommandInput(self.createTextBoxInput(
+                "signal_header", "Signal", joint_inputs, "Signal type", background="#d9d9d9"), 0, 3)
 
             for joint in gm.app.activeDocument.design.rootComponent.allJoints:
                 if joint.jointMotion.jointType == 0:
@@ -368,9 +360,6 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             """
             Gamepiece Configuration
             """
-            GAMEPIECE_CONFIGURATION = {
-
-            }
 
             gamepieceConfig = inputs.addGroupCommandInput(
                 "gamepiece_config", "Gamepiece Configuration"
@@ -429,9 +418,14 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             gamepieceTableInput.addToolbarCommandInput(addFieldInput)
             gamepieceTableInput.addToolbarCommandInput(removeFieldInput)
 
-            gamepieceTableInput.addCommandInput(self.createTextBoxInput("e_header", "Gamepiece weight", gamepiece_inputs, "Element", True, True), 0, 1)
-            gamepieceTableInput.addCommandInput(self.createTextBoxInput("w_header", "Gamepiece weight", gamepiece_inputs, "Weight", True, True), 0, 2)
-            gamepieceTableInput.addCommandInput(self.createTextBoxInput("f_header", "Friction coefficient", gamepiece_inputs, "Friction coefficient (0 to 1)", True, True), 0, 3)
+            gamepieceTableInput.addCommandInput(self.createTextBoxInput(
+                "e_header", "Gamepiece weight", gamepiece_inputs, "Element", bold=False), 0, 1)
+
+            gamepieceTableInput.addCommandInput(self.createTextBoxInput(
+                "w_header", "Gamepiece weight", gamepiece_inputs, "Weight", background="#d9d9d9"), 0, 2)
+
+            gamepieceTableInput.addCommandInput(self.createTextBoxInput(
+                "f_header", "Friction coefficient", gamepiece_inputs, "Friction coefficient (0 to 1)", background="#d9d9d9"), 0, 3)
             
             """
             ~ Advanced Tab ~
@@ -445,9 +439,6 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             """
             Physics Settings
             """
-            PHYSICS_SETTINGS = {
-
-            }
 
             physicsSettings = a_input.addGroupCommandInput(
                 "physics_settings", "Physics Settings"
@@ -529,9 +520,6 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             """
             Controller Settings
             """
-            CONTROLLER_SETTINGS = {
-
-            }
 
             controllerSettings = a_input.addGroupCommandInput(
                 "controller_settings", "Controller Settings"
@@ -548,6 +536,15 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             elif gm.ui:
                 gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
 
+        onExecute = ConfigureCommandExecuteHandler(
+                json.dumps(
+                    previous, default=lambda o: o.__dict__, sort_keys=True, indent=1
+                ),
+                previous.filePath,
+            )
+        cmd.execute.add(onExecute)
+        gm.handlers.append(onExecute)
+        
         onInputChanged = ConfigureCommandInputChanged()
         cmd.inputChanged.add(onInputChanged)
         gm.handlers.append(onInputChanged)
@@ -625,23 +622,37 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
         name: str,
         inputs: adsk.core.CommandInputs,
         text: str,
-        italics: bool,
-        bold: bool,
+        italics=True,
+        bold=True,
         fontSize=10,
         alignment="left",
         rowCount=1,
-        read=True
+        read=True,
+        background="whitesmoke"
         ) -> adsk.core.TextBoxCommandInput:
-        
-        if italics and not bold:
-            _text = "<div align='{}'><p style='font-size:{}px'><i>{}</i></p>".format(alignment, fontSize, text)
-        elif bold and not italics:
-            _text = "<div align='{}'><p style='font-size:{}px'><b>{}</b></p>".format(alignment, fontSize, text)
-        elif bold and italics:
-            _text = "<body style='background-color:whitesmoke;'><div align='{}'><p style='font-size:{}px'><b><i>{}</i></b></p></body>".format(alignment, fontSize, text)
-        else:
-            _text = "<div align='{}'><p style='font-size:{}px'>{}</p>".format(alignment, fontSize, text)
 
+        i=["", ""]
+        b=["", ""]
+
+        if bold:
+            b[0]="<b>"
+            b[1]="</b>"
+        if italics:
+            i[0]="<i>"
+            i[1]="</i>"
+
+        wrapper = """<body style='background-color:%s;'>
+                     <div align='%s'>
+                     <p style='font-size:%spx'>
+                     %s%s{}%s%s</p></body>
+                  """.format(text)
+
+        _text = wrapper % (
+            background, 
+            alignment, 
+            fontSize,
+            b[0], i[0], i[1], b[1])
+        
         _input = inputs.addTextBoxCommandInput(_id, name, _text, rowCount, read)
         return _input
 
@@ -728,42 +739,52 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
 
                 _exportWheels = []
                 _exportJoints = []
-                joint_name = []
-
-                for i in _joints:
-                    joint_name.append(i.name)
 
                 for row in range(wheelTableInput.rowCount):
-                    if row != 0:
-                        index = wheelTableInput.getInputAtPosition(
-                            row, 2
-                        ).selectedItem.index
+                    if row == 0: continue
 
-                        if index == 0:
-                            _exportWheels.append(
-                                _Wheel(_wheels[row - 1].entityToken, WheelType.STANDARD)
-                            )
-                        elif index == 1:
-                            _exportWheels.append(
-                                _Wheel(_wheels[row - 1].entityToken, WheelType.OMNI)
-                            )
+                    wheelTypeIndex = wheelTableInput.getInputAtPosition(
+                        row, 2
+                    ).selectedItem.index
+
+                    signalTypeIndex = wheelTableInput.getInputAtPosition(
+                        row, 3
+                    ).selectedItem.index
+
+                    wheelType = WheelType(wheelTypeIndex)
+                    signalType = SignalType(signalTypeIndex)
+
+                    _exportWheels.append(
+                        _Wheel(_wheels[row-1].entityToken, wheelType, signalType)
+                    )
 
                 for row in range(jointTableInput.rowCount):
-                    if row != 0:
-                        item = jointTableInput.getInputAtPosition(row, 2).selectedItem
+                    if row == 0: continue
 
-                        if item.name == "Root":
-                            _exportJoints.append(
-                                _Joint(_joints[row - 1].entityToken, JointParentType.ROOT)
-                            )
-                        else:
-                            index = joint_name.index(item.name)
-                            _exportJoints.append(
-                                _Joint(
-                                    _joints[row - 1].entityToken,
-                                    _joints[index].entityToken,
-                                )
-                            )
+                    parentJointIndex = jointTableInput.getInputAtPosition(
+                        row, 2
+                    ).selectedItem.index
+
+                    signalTypeIndex = jointTableInput.getInputAtPosition(
+                        row, 3
+                    ).selectedItem.index
+
+                    parentJointToken = str
+                    signalType = SignalType(signalTypeIndex)
+
+                    if parentJointIndex == 0:
+                        _exportJoints.append(
+                            _Joint(_joints[row - 1].entityToken, JointParentType.ROOT, signalType)
+                        )
+                        continue
+                    elif parentJointIndex < row:
+                        parentJointToken = _joints[parentJointIndex-1].entityToken
+                    else:
+                        parentJointToken = _joints[parentJointIndex+1].entityToken
+
+                    _exportJoints.append(
+                            _Joint(_joints[row - 1].entityToken, parentJointToken, signalType)
+                    )
 
                 options = ParseOptions(
                     savepath,
@@ -969,7 +990,7 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
     """
 
     def __init__(self,
-        ):
+    ):
 
         super().__init__()
         self.log = logging.getLogger(
@@ -1264,8 +1285,9 @@ def addJointToTable(joint):
             "Signal Type",
             dropDownStyle=adsk.core.DropDownStyles.LabeledIconDropDownStyle,
         )
-        signalType.listItems.add("PWM", True, "")
-        signalType.listItems.add("CAN", False, "")
+        signalType.listItems.add("PWM", True)
+        signalType.listItems.add("CAN", False)
+        signalType.listItems.add("Passive", False)
         signalType.tooltip = "Signal type"
 
         row = jointTableInput.rowCount
@@ -1280,8 +1302,6 @@ def addJointToTable(joint):
 
 def addWheelToTable(wheel):
     try:
-        _wheels.append(wheel)
-
         #if len(_wheels) > 10:
         #    isValid = False
         #    while not isValid:
@@ -1303,7 +1323,9 @@ def addWheelToTable(wheel):
         #        finally:
         #            gm.ui.messageBox(str(realValue))
 
+        _wheels.append(wheel)
         cmdInputs = adsk.core.CommandInputs.cast(wheelTableInput.commandInputs)
+
         icon = cmdInputs.addImageCommandInput("placeholder_w", "Placeholder", iconPaths["standard"])
         name = cmdInputs.addTextBoxCommandInput("name_w", "Occurrence name", wheel.name, 1, True)
         name.tooltip = (
@@ -1328,6 +1350,7 @@ def addWheelToTable(wheel):
         )
         signalType.listItems.add("PWM", True, "")
         signalType.listItems.add("CAN", False, "")
+        signalType.listItems.add("Passive", False, "")
         signalType.tooltip = "Signal type"
 
         row = wheelTableInput.rowCount
@@ -1381,6 +1404,15 @@ def addGamepieceToTable(gamepiece):
         if gm.ui:
             gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
 
+def removeWheelFromTable(wheel):
+    try:
+        index = _wheels.index(wheel)
+        _wheels.remove(wheel)
+        wheelTableInput.deleteRow(index + 1)
+    except:
+        if gm.ui:
+            gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
+
 def removeJointFromTable(joint):
     try:
         index = _joints.index(joint)
@@ -1401,15 +1433,6 @@ def removeJointFromTable(joint):
                     dropDown.listItems.add(joint.name, False)
 
                 dropDown.listItems.item(row - 1).isSelected = True
-    except:
-        if gm.ui:
-            gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
-
-def removeWheelFromTable(wheel):
-    try:
-        index = _wheels.index(wheel)
-        _wheels.remove(wheel)
-        wheelTableInput.deleteRow(index + 1)
     except:
         if gm.ui:
             gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
