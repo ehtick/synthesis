@@ -17,7 +17,7 @@ from .Configuration.SerialCommand import (
     ExportMode,
 )
 
-import adsk.core, adsk.fusion, traceback
+import adsk.core, adsk.fusion, traceback, math
 from types import SimpleNamespace
 
 """
@@ -91,6 +91,9 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 showAnalyticsAlert()
                 NOTIFIED = True
                 write_configuration("analytics", "notified", "yes")
+
+            app = adsk.core.Application.get()
+            design = app.activeDocument.design
 
             previous = None
             saved = Helper.previouslyConfigured()
@@ -170,11 +173,19 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             weight_name.value = "Weight"
             weight_name.isReadOnly = True
 
+            populateweight = 0.0
+
+            if (design):
+                rootComponent = design.rootComponent
+                physical = rootComponent.getPhysicalProperties(adsk.fusion.CalculationAccuracy.LowCalculationAccuracy)
+                populateweight = physical.mass * 2.2046226218 # kg to lbs
+                populateweight = round(populateweight, 2) # make it more readable - why is this so small?
+
             weight_input = inputs.addValueInput(
                 "weight_input",
                 "Weight Input",
                 "",
-                adsk.core.ValueInput.createByString("0.0"),
+                adsk.core.ValueInput.createByString(str(populateweight)),
             )
             weight_input.tooltip = "Weight"
 
