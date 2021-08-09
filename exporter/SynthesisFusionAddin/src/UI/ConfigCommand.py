@@ -1013,29 +1013,27 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
         self.cmd = cmd
 
     def wheelParent(self, occ):
-        occ_context = occ.assemblyContext
+        try:
+            occurrences = []
+            parent = occ.assemblyContext
 
-        if occ_context == None:
+            for joint in gm.app.activeDocument.design.rootComponent.allJoints:
+                if joint.jointMotion.jointType != adsk.fusion.JointTypes.RevoluteJointType:
+                    continue
+                occurrences.extend((joint.occurrenceOne, joint.occurrenceTwo))
+
+            while parent != None:
+                for i in range(len(parent.childOccurrences)):
+                    if parent.childOccurrences.item(i) in occurrences:
+                        return parent
+                    parent = parent.assemblyContext
             return occ
-        else:
-            return occ_context
+        except AttributeError:
+            return occ
+        except:
+            if gm.ui:
+                gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
         
-        #occurrences = []
-        #parent = occ
-
-        #for joint in gm.app.activeDocument.design.rootComponent.allJoints:
-        #    if joint.jointMotion.jointType != adsk.fusion.JointTypes.RevoluteJointType:
-        #        continue
-        #    occurrences.extend((joint.occurrenceOne, joint.occurrenceTwo))
-
-        #while occ.assemblyContext:
-        #    if parent in occurrences:
-        #        return parent
-        #    parent = parent.assemblyContext
-
-        #return occ
-        
-
     def notify(self, args):
         try:
             eventArgs = adsk.core.SelectionEventArgs.cast(args)
