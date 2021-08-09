@@ -222,16 +222,16 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             """
             Export Joints
             """
-            global exportJoints
-            exportJoints = self.createBooleanInput(
-                "export_joints",
-                "Export Joints",
-                inputs,
-                checked=True,
-                tooltip="Export Fusion 360 joints into Unity.",
-                tooltipadvanced="May be inconsistent dependening on the type of joint.",
-                enabled=True,
-            )
+            #global exportJoints
+            #exportJoints = self.createBooleanInput(
+            #    "export_joints",
+            #    "Export Joints",
+            #    inputs,
+            #    checked=True,
+            #    tooltip="Export Fusion 360 joints into Unity.",
+            #    tooltipadvanced="May be inconsistent dependening on the type of joint.",
+            #    enabled=True,
+            #)
 
             """
             Wheel Configuration
@@ -908,7 +908,7 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
                         _Wheel(_wheels[row - 1].entityToken, wheelType, signalType)
                     )
 
-                if exportJoints.value:
+                #if exportJoints.value:
                     for row in range(jointTableInput.rowCount):
                         if row == 0:
                             continue
@@ -1270,7 +1270,7 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
             if cmdInput.id == "mode":
                 modeDropdown = adsk.core.DropDownCommandInput.cast(cmdInput)
 
-                exportJoints = inputs.itemById("export_joints")
+                #exportJoints = inputs.itemById("export_joints")
                 weightTableInput = inputs.itemById("weight_table")
                 gamepieceConfig = inputs.itemById("gamepiece_config")
                 wheelConfig = inputs.itemById("wheel_config")
@@ -1282,14 +1282,10 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                         gm.app.activeDocument.design.rootComponent.opacity = 1
 
                         gamepieceConfig.isVisible = False
-                        exportJoints.isVisible = (
-                            wheelConfig.isVisible
-                        ) = weightTableInput.isVisible = True
+                        weightTableInput.isVisible = True
 
-                        if exportJoints.value == True:
-                            jointConfig.isVisible = True
-                        else:
-                            jointConfig.isVisible = False
+                        wheelConfig.isVisible = \
+                        jointConfig.isVisible = True
 
                 elif modeDropdown.selectedItem.name == "Field":
                     if gamepieceConfig:
@@ -1297,20 +1293,20 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                         gm.app.activeDocument.design.rootComponent.opacity = 1
 
                         gamepieceConfig.isVisible = True
-                        jointConfig.isVisible = (
-                            exportJoints.isVisible
-                        ) = wheelConfig.isVisible = weightTableInput.isVisible = False
+                        jointConfig.isVisible = \
+                        wheelConfig.isVisible = \
+                        weightTableInput.isVisible = False
 
-            elif cmdInput.id == "export_joints":
-                boolValue = adsk.core.BoolValueCommandInput.cast(cmdInput)
-                jointConfig = inputs.itemById("joint_config")
+            #elif cmdInput.id == "export_joints":
+            #    boolValue = adsk.core.BoolValueCommandInput.cast(cmdInput)
+            #    jointConfig = inputs.itemById("joint_config")
 
-                if boolValue.value == True:
-                    if jointConfig:
-                        jointConfig.isVisible = True
-                else:
-                    if jointConfig:
-                        jointConfig.isVisible = False
+            #    if boolValue.value == True:
+            #        if jointConfig:
+            #            jointConfig.isVisible = True
+            #    else:
+            #        if jointConfig:
+            #            jointConfig.isVisible = False
 
             elif cmdInput.id == "joint_config":
                 for occ in gm.app.activeDocument.design.rootComponent.allOccurrences:
