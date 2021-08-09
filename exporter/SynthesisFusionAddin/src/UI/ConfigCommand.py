@@ -45,7 +45,7 @@ _wheels = []
 _joints = []
 _gamepieces = []
 
-# easy-access image paths for icons
+# TODO: use os.path.join() path here
 iconPaths = {
     "omni": "src\Resources\WheelIcons\omni-wheel-preview190x24.png",
     "standard": "src\Resources\WheelIcons\standard-wheel-preview190x24.png",
@@ -1020,8 +1020,9 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
             for joint in gm.app.activeDocument.design.rootComponent.allJoints:
                 if joint.jointMotion.jointType != adsk.fusion.JointTypes.RevoluteJointType:
                     continue
-                occurrences.extend((joint.occurrenceOne, joint.occurrenceTwo))
 
+                occurrences.extend((joint.occurrenceOne, joint.occurrenceTwo))
+            
             while parent != None:
                 for i in range(len(parent.childOccurrences)):
                     if parent.childOccurrences.item(i) in occurrences:
@@ -1042,7 +1043,6 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
             selectedJoint = adsk.fusion.Joint.cast(args.selection.entity)
             
             if selectedOcc:
-                #gm.ui.messageBox(selectedOcc.assemblyContext.name)
                 parent = self.wheelParent(selectedOcc)
                 occurrenceList = gm.app.activeDocument.design.rootComponent.allOccurrencesByComponent(parent.component)
                 
@@ -1100,12 +1100,20 @@ class MyPreSelectHandler(adsk.core.SelectionEventHandler):
         self.cmd = cmd
 
     def wheelParent(self, occ):
-        occ_context = occ.assemblyContext
-
-        if occ_context == None:
+        try:
+            parent = occ.assemblyContext
+            
+            while parent != None:
+                for i in range(len(parent.childOccurrences)):
+                    if parent.childOccurrences.item(i) in _wheels:
+                        return parent
+                    parent = parent.assemblyContext
             return occ
-        else:
-            return occ_context
+        except AttributeError:
+            return occ
+        except:
+            if gm.ui:
+                gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
 
     def notify(self, args):
         try:
