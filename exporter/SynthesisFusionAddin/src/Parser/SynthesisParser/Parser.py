@@ -98,8 +98,8 @@ class Parser:
 
             assembly_out.design_hierarchy.nodes.append(rootNode)
 
-            Joints.populateJoints(
-                design, assembly_out.data.joints, self.pdMessage, self.parseOptions
+            Joints.populateJoints (
+                design, assembly_out.data.joints, assembly_out.data.signals, self.pdMessage, self.parseOptions
             )
 
             # add condition in here for advanced joints maybe idk
@@ -127,6 +127,7 @@ class Parser:
                 part_defs = assembly_out.data.parts.part_definitions
                 parts = assembly_out.data.parts.part_instances
                 joints = assembly_out.data.joints.joint_definitions
+                signals = assembly_out.data.signals.signal_map
 
                 joint_hierarchy_out = "Joint Hierarchy :\n"
 
@@ -139,11 +140,12 @@ class Parser:
                         jointdefinition = assembly_out.data.joints.joint_definitions[
                             newnode.joint_reference
                         ]
-                        joint_hierarchy_out = f"{joint_hierarchy_out}  |- {jointdefinition.info.name} type: {jointdefinition.joint_motion_type}\n"
+                        wheel_ = f" wheel : true" if jointdefinition.user_data.data["wheel"] is not "" else ""
+                        joint_hierarchy_out = f"{joint_hierarchy_out}  |- {jointdefinition.info.name} type: {jointdefinition.joint_motion_type} {wheel_}\n"
 
                     for child in node.children:
                         if child.value == "ground":
-                            joint_hierarchy_out = f"{joint_hierarchy_out} |--- ground\n"
+                            joint_hierarchy_out = f"{joint_hierarchy_out} |---> ground\n"
                         else:
                             newnode = assembly_out.data.joints.joint_instances[
                                 child.value
@@ -151,16 +153,27 @@ class Parser:
                             jointdefinition = assembly_out.data.joints.joint_definitions[
                                 newnode.joint_reference
                             ]
-                            joint_hierarchy_out = f"{joint_hierarchy_out}  |--- {jointdefinition.info.name} type: {jointdefinition.joint_motion_type}\n"
+                            wheel_ = f" wheel : true" if jointdefinition.user_data.data["wheel"] is not "" else ""
+                            joint_hierarchy_out = f"{joint_hierarchy_out}  |---> {jointdefinition.info.name} type: {jointdefinition.joint_motion_type} {wheel_}\n"
 
                 joint_hierarchy_out += "\n\n"
 
                 gm.ui.messageBox(
-                    f"Appearances: {len(assembly_out.data.materials.appearances)} \nMaterials: {len(assembly_out.data.materials.physicalMaterials)} \nPart-Definitions: {len(part_defs)} \nParts: {len(parts)} \nJoints: {len(joints)}\n {joint_hierarchy_out}"
+                    f"Appearances: {len(assembly_out.data.materials.appearances)} \nMaterials: {len(assembly_out.data.materials.physicalMaterials)} \nPart-Definitions: {len(part_defs)} \nParts: {len(parts)} \nSignals: {len(signals)} \nJoints: {len(joints)}\n {joint_hierarchy_out}"
                 )
 
         except:
             self.logger.error("Failed:\n{}".format(traceback.format_exc()))
+
+            if DEBUG:
+                gm.ui.messageBox(
+                    "Failed:\n{}".format(traceback.format_exc())
+                )
+            else:
+                gm.ui.messageBox(
+                    "An error occurred while exporting."
+                )
+                
             return False
 
         return True

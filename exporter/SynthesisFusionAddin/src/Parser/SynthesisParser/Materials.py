@@ -1,5 +1,5 @@
 # Should contain Physical and Apperance materials ?
-import adsk, logging, traceback
+import adsk, logging, traceback, math
 
 from .Utilities import *
 from .. import ParseOptions
@@ -69,49 +69,48 @@ def getPhysicalMaterialData(fusion_material, proto_material, options):
         """
         Thermal Properties
         """
-        thermalProperties.thermal_conductivity = materialProperties.itemById[
+        thermalProperties.thermal_conductivity = materialProperties.itemById(
             "thermal_Thermal_conductivity"
-        ].value
-        thermalProperties.specific_heat = materialProperties.itemById[
+        ).value
+        thermalProperties.specific_heat = materialProperties.itemById(
             "structural_Specific_heat"
-        ].value
-        thermalProperties.thermal_expansion_coefficient = materialProperties.itemById[
+        ).value
+        thermalProperties.thermal_expansion_coefficient = materialProperties.itemById(
             "structural_Thermal_expansion_coefficient"
-        ].value
+        ).value
 
         """
         Mechanical Properties
         """
-        mechanicalProperties.young_mod = materialProperties.itemById[
+        mechanicalProperties.young_mod = materialProperties.itemById(
             "structural_Young_modulus"
-        ].value
-        mechanicalProperties.poisson_ratio = materialProperties.itemById[
+        ).value
+        mechanicalProperties.poisson_ratio = materialProperties.itemById(
             "structural_Poisson_ratio"
-        ].value
-        mechanicalProperties.shear_mod = materialProperties.itemById[
+        ).value
+        mechanicalProperties.shear_mod = materialProperties.itemById(
             "structural_Shear_modulus"
-        ].value
-        mechanicalProperties.density = materialProperties.itemById[
+        ).value
+        mechanicalProperties.density = materialProperties.itemById(
             "structural_Density"
-        ].value
-        mechanicalProperties.damping_coefficient = materialProperties.itemById[
+        ).value
+        mechanicalProperties.damping_coefficient = materialProperties.itemById(
             "structural_Damping_coefficient"
-        ].value
+        ).value
 
         """
         Strength Properties
         """
-        strengthProperties.yield_strength = materialProperties.itemById[
+        strengthProperties.yield_strength = materialProperties.itemById(
             "structural_Minimum_yield_stress"
-        ].value
-        strengthProperties.tensile_strength = materialProperties.itemById[
+        ).value
+        strengthProperties.tensile_strength = materialProperties.itemById(
             "structural_Minimum_tensile_strength"
-        ].value
-        strengthProperties.thermal_treatment = materialProperties.itemById[
+        ).value
+        strengthProperties.thermal_treatment = materialProperties.itemById(
             "structural_Thermally_treated"
-        ].value
+        ).value
 
-        print(strengthProperties.thermal_treatment)
     except:
         logging.getLogger(
             f"{INTERNAL_ID}.Parser.Materials.getPhysicalMaterialData"

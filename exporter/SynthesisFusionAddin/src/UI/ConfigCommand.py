@@ -898,45 +898,49 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
                         _Wheel(_wheels[row - 1].entityToken, wheelType, signalType)
                     )
 
-                #if exportJoints.value:
-                    for row in range(jointTableInput.rowCount):
-                        if row == 0:
-                            continue
+                for row in range(jointTableInput.rowCount):
+                    if row == 0:
+                        continue
 
-                        parentJointIndex = jointTableInput.getInputAtPosition(
-                            row, 2
-                        ).selectedItem.index
+                    parentJointIndex = jointTableInput.getInputAtPosition(
+                        row, 2
+                    ).selectedItem.index
 
-                        signalTypeIndex = jointTableInput.getInputAtPosition(
-                            row, 3
-                        ).selectedItem.index
+                    signalTypeIndex = jointTableInput.getInputAtPosition(
+                        row, 3
+                    ).selectedItem.index
 
-                        parentJointToken = ""
-                        signalType = signalTypeIndex
+                    parentJointToken = ""
+                    signalType = signalTypeIndex
 
-                        if parentJointIndex == 0:
-                            _exportJoints.append(
-                                _Joint(
-                                    _joints[row - 1].entityToken,
-                                    JointParentType.ROOT,
-                                    signalType,
-                                )  # Root
-                            )
-                            continue
-                        elif parentJointIndex < row:
-                            parentJointToken = _joints[
-                                parentJointIndex - 1
-                            ].entityToken  # str
-                        else:
-                            parentJointToken = _joints[
-                                parentJointIndex + 1
-                            ].entityToken  # str
-
+                    if parentJointIndex == 0:
                         _exportJoints.append(
                             _Joint(
-                                _joints[row - 1].entityToken, parentJointToken, signalType
-                            )
+                                _joints[row - 1].entityToken,
+                                JointParentType.ROOT,
+                                signalType,
+                            )  # Root
                         )
+                        continue
+                    elif parentJointIndex < row:
+                        parentJointToken = _joints[
+                            parentJointIndex - 1
+                        ].entityToken  # str
+                    else:
+                        parentJointToken = _joints[
+                            parentJointIndex + 1
+                        ].entityToken  # str
+
+                    #for wheel in _exportWheels:
+                        # find some way to get joint
+                        # 1. Compare Joint occurrence1 to wheel.occurrence_token
+                        # 2. if true set the parent to Root
+
+                    _exportJoints.append(
+                        _Joint(
+                            _joints[row - 1].entityToken, parentJointToken, signalType
+                        )
+                    )
 
                 options = ParseOptions(
                     savepath,
@@ -949,16 +953,11 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
 
                 if options.parse(False):
                     # success
-                    pass
+                    return
                 else:
-                    gm.ui.messageBox(
-                        f"Error: \n\t{name} could not be written to \n {savepath}"
-                    )
                     self.log.error(
                         f"Error: \n\t{name} could not be written to \n {savepath}"
                     )
-
-            # gm.ui.messageBox(f"general materials is set to: {inputs.itemById('general_settings').children.itemById('materials').value}")
         except:
             self.log.error("Failed:\n{}".format(traceback.format_exc()))
             if A_EP:
