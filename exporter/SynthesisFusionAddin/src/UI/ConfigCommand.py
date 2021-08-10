@@ -57,6 +57,7 @@ _gamepieces = []
 iconPaths = {
     "omni": "src\Resources\WheelIcons\omni-wheel-preview190x24.png",
     "standard": "src\Resources\WheelIcons\standard-wheel-preview190x24.png",
+    "mecanum": "src\Resources\WheelIcons\mecanum-wheel-preview190x24.png",
     "rigid": "src/Resources/JointIcons/JointRigid/rigid190x24.png",
     "revolute": "src/Resources/JointIcons/JointRev/revolute190x24.png",
     "slider": "src/Resources/JointIcons/JointSlider/slider190x24.png",
@@ -1417,6 +1418,14 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                     iconInput.imageFile = iconPaths["omni"]
                     iconInput.tooltip = "Omni wheel"
 
+                elif wheelDropdown.selectedItem.name == "Mecanum":
+                    getPosition = wheelTableInput.getPosition(
+                        adsk.core.DropDownCommandInput.cast(cmdInput)
+                    )
+                    iconInput = wheelTableInput.getInputAtPosition(getPosition[1], 0)
+                    iconInput.imageFile = iconPaths["mecanum"]
+                    iconInput.tooltip = "Mecanum wheel"
+
                 gm.ui.activeSelections.add(_wheels[position])
 
             elif cmdInput.id == "wheel_add":
@@ -1700,6 +1709,7 @@ def addWheelToTable(wheel):
         )
         wheelType.listItems.add("Standard", True, "")
         wheelType.listItems.add("Omni", False, "")
+        wheelType.listItems.add("Mecanum", False, "")
         wheelType.tooltip = "Wheel type"
         wheelType.tooltipDescription = "<Br>Omni-directional wheels can be used just like regular drive wheels but they have the advantage of being able to roll freely perpendicular to the drive direction.</Br>"
         wheelType.toolClipFilename = "src\Resources\WheelIcons\omni-wheel-preview.png"
