@@ -46,6 +46,7 @@ removeFieldInput = adsk.core.BoolValueCommandInput.cast(None)
 
 duplicateSelection = adsk.core.BoolValueCommandInput.cast(None)
 dropdownExportMode = adsk.core.DropDownCommandInput.cast(None)
+weightUnit = adsk.core.DropDownCommandInput.cast(None)
 
 # selected wheels, joints, & gamepieces
 _wheels = []
@@ -176,9 +177,8 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             """
             Weight Configuration
             """
-
             weightTableInput = self.createTableInput(
-                "weight_table", "Weight Table", inputs, 3, "5:3:2", 1
+                "weight_table", "Weight Table", inputs, 4, "3:2:3:1", 1
             )
             weightTableInput.tablePresentationStyle = 2
 
@@ -186,18 +186,21 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             weight_name.value = "Weight"
             weight_name.isReadOnly = True
 
-            populateweight = 0.0
+            auto_calc_weight = self.createBooleanInput(
+                "auto_calc_weight",
+                "‎",
+                inputs,
+                checked=False,
+                tooltip="Automatically calculate the weight of your assembly.",
+                enabled=True,
+                isCheckBox=False
+            )
+            auto_calc_weight.resourceFolder = "src/Resources/AutoCalcWeight_icon/"
+            auto_calc_weight.isFullWidth = True
 
-            if design:
-                rootComponent = design.rootComponent
-                physical = rootComponent.getPhysicalProperties(
-                    adsk.fusion.CalculationAccuracy.LowCalculationAccuracy
-                )
-                populateweight = physical.mass * 2.2046226218  # kg to lbs
-                populateweight = round(
-                    populateweight, 2
-                )  # make it more readable - why is this so small?
+            populateweight = 0
 
+            global weight_input
             weight_input = inputs.addValueInput(
                 "weight_input",
                 "Weight Input",
@@ -206,6 +209,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             )
             weight_input.tooltip = "Weight"
 
+            global weight_unit
             weight_unit = inputs.addDropDownCommandInput(
                 "weight_unit",
                 "Weight Unit",
@@ -216,27 +220,13 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             weight_unit.tooltip = "Unit of mass"
 
             weightTableInput.addCommandInput(weight_name, 0, 0)
-            weightTableInput.addCommandInput(weight_input, 0, 1)
-            weightTableInput.addCommandInput(weight_unit, 0, 2)
-
-            """
-            Export Joints
-            """
-            #global exportJoints
-            #exportJoints = self.createBooleanInput(
-            #    "export_joints",
-            #    "Export Joints",
-            #    inputs,
-            #    checked=True,
-            #    tooltip="Export Fusion 360 joints into Unity.",
-            #    tooltipadvanced="May be inconsistent dependening on the type of joint.",
-            #    enabled=True,
-            #)
+            weightTableInput.addCommandInput(auto_calc_weight, 0, 1)
+            weightTableInput.addCommandInput(weight_input, 0, 2)
+            weightTableInput.addCommandInput(weight_unit, 0, 3)
 
             """
             Wheel Configuration
             """
-
             wheelConfig = inputs.addGroupCommandInput(
                 "wheel_config", "Wheel Configuration"
             )
@@ -252,13 +242,13 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             Automatically Select Duplicates
             """
             global duplicateSelection
-
             duplicateSelection = self.createBooleanInput(
                 "duplicate_selection",
-                "Duplicate Selection",
+                "Select Duplicates",
                 wheel_inputs,
                 checked=True,
-                tooltip="Automatically select duplicate wheel components.",
+                tooltip="Select duplicate wheel components.",
+                tooltipadvanced="When this is checked, all duplicate occurrences will be automatically selected.",
                 enabled=True,
             )
 
@@ -359,7 +349,8 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 "joint_delete", "Remove", False
             )
 
-            addJointInput.isEnabled = removeJointInput.isEnabled = True
+            addJointInput.isEnabled = \
+            removeJointInput.isEnabled = True
 
             addJointInput.tooltip = "Add a joint selection"
             removeJointInput.tooltip = "Remove a joint selection"
@@ -777,7 +768,6 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
         read=True,
         background="whitesmoke",
     ) -> adsk.core.TextBoxCommandInput:
-
         i = ["", ""]
         b = ["", ""]
 
@@ -797,7 +787,6 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                   """.format(
             text
         )
-
         _text = wrapper % (background, alignment, fontSize, b[0], i[0], i[1], b[1])
 
         _input = inputs.addTextBoxCommandInput(_id, name, _text, rowCount, read)
@@ -1240,6 +1229,7 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
             - Give optional hand contact set placement
             - Check for additional params on exit
             - serialize additional data
+    
     """
 
     def __init__(self, cmd):
@@ -1248,10 +1238,38 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
             f"{INTERNAL_ID}.UI.ConfigCommand.{self.__class__.__name__}"
         )
         self.cmd = cmd
+        self.allWeights = [None, None]
+        self.isLbs = True
 
     def reset(self):
         self.cmd.setCursor("", 0, 0)
         gm.ui.activeSelections.clear()
+
+    def weight(self, isLbs=True):
+        if gm.app.activeDocument.design:
+            rootComponent = gm.app.activeDocument.design.rootComponent
+            physical = rootComponent.getPhysicalProperties(
+                adsk.fusion.CalculationAccuracy.LowCalculationAccuracy
+            )
+            value = float
+
+            self.allWeights[0] = round(
+                physical.mass * 2.2046226218, 2
+            )
+
+            self.allWeights[1] = round(
+                physical.mass, 2
+            )
+
+            if isLbs:
+                value = self.allWeights[0]
+            else:
+                value = self.allWeights[1]
+
+            value = round(
+                value, 2
+            )
+            return value
 
     def notify(self, args):
         try:
@@ -1270,7 +1288,6 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
             if cmdInput.id == "mode":
                 modeDropdown = adsk.core.DropDownCommandInput.cast(cmdInput)
 
-                #exportJoints = inputs.itemById("export_joints")
                 weightTableInput = inputs.itemById("weight_table")
                 gamepieceConfig = inputs.itemById("gamepiece_config")
                 wheelConfig = inputs.itemById("wheel_config")
@@ -1296,17 +1313,6 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                         jointConfig.isVisible = \
                         wheelConfig.isVisible = \
                         weightTableInput.isVisible = False
-
-            #elif cmdInput.id == "export_joints":
-            #    boolValue = adsk.core.BoolValueCommandInput.cast(cmdInput)
-            #    jointConfig = inputs.itemById("joint_config")
-
-            #    if boolValue.value == True:
-            #        if jointConfig:
-            #            jointConfig.isVisible = True
-            #    else:
-            #        if jointConfig:
-            #            jointConfig.isVisible = False
 
             elif cmdInput.id == "joint_config":
                 for occ in gm.app.activeDocument.design.rootComponent.allOccurrences:
@@ -1341,7 +1347,7 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                 cmdInput.id == "blank_gp"
                 or cmdInput.id == "name_gp"
                 or cmdInput.id == "weight_gp"
-            ):
+                ):
                 self.reset()
 
                 gamepieceSelect.isEnabled = False
@@ -1489,6 +1495,30 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                 else:
                     frictionCoeff.isVisible = False
 
+            elif cmdInput.id == "weight_unit":
+                unitDropdown = adsk.core.DropDownCommandInput.cast(cmdInput)
+                if unitDropdown.selectedItem.index == 0:
+                    self.isLbs = True
+                else:
+                    self.isLbs = False
+
+            elif cmdInput.id == "auto_calc_weight":
+                button = adsk.core.BoolValueCommandInput.cast(cmdInput)
+                
+                if button.value == True:
+                    if self.allWeights.count(None) == 2:
+                        if self.isLbs:
+                            self.allWeights[0] = self.weight()
+                            weight_input.value = self.allWeights[0]
+                        else:
+                            self.allWeights[1] = self.weight(False)
+                            weight_input.value = self.allWeights[1]
+                    else:
+                        if weight_input.value != self.allWeights[0] or weight_input.value != self.allWeights[1] or not weight_input.isValidExpression:
+                            if self.isLbs:
+                                weight_input.value = float(self.allWeights[0])
+                            else:
+                                weight_input.value = float(self.allWeights[1])
         except:
             self.log.error("Failed:\n{}".format(traceback.format_exc()))
             if A_EP:
