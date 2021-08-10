@@ -53,19 +53,22 @@ _wheels = []
 _joints = []
 _gamepieces = []
 
-# TODO: use os.path.join() path here
+resources = os.path.join("src", "Resources")
+separator = resources[3]
+resources += separator
+
 iconPaths = {
-    "omni": "src\Resources\WheelIcons\omni-wheel-preview190x24.png",
-    "standard": "src\Resources\WheelIcons\standard-wheel-preview190x24.png",
-    "mecanum": "src\Resources\WheelIcons\mecanum-wheel-preview190x24.png",
-    "rigid": "src/Resources/JointIcons/JointRigid/rigid190x24.png",
-    "revolute": "src/Resources/JointIcons/JointRev/revolute190x24.png",
-    "slider": "src/Resources/JointIcons/JointSlider/slider190x24.png",
-    "cylindrical": "src/Resources/JointIcons/JointCyl/cylindrical190x24.png",
-    "pin_slot": "src/Resources/JointIcons/JointPinSlot/pin_slot190x24.png",
-    "planar": "src/Resources/JointIcons/JointPlanar/planar190x24.png",
-    "ball": "src/Resources/JointIcons/JointBall/ball190x24.png",
-    "blank": "src/Resources/blank-preview16x16.png",
+    "omni": resources + os.path.join("WheelIcons", "omni-wheel-preview190x24.png"),
+    "standard": resources + os.path.join("WheelIcons", "standard-wheel-preview190x24.png"),
+    "mecanum": resources + os.path.join("WheelIcons", "mecanum-wheel-preview190x24.png"),
+    "rigid": resources + os.path.join("JointIcons", "JointRigid", "rigid190x24.png"),
+    "revolute": resources + os.path.join("JointIcons", "JointRev", "revolute190x24.png"),
+    "slider": resources + os.path.join("JointIcons", "JointSlider", "slider190x24.png"),
+    "cylindrical": resources + os.path.join("JointIcons", "JointCyl", "cylindrical190x24.png"),
+    "pin_slot": resources + os.path.join("JointIcons", "JointPinSlot", "pin_slot190x24.png"),
+    "planar": resources + os.path.join("JointIcons", "JointPlanar", "planar190x24.png"),
+    "ball": resources + os.path.join("JointIcons", "JointBall", "ball190x24.png"),
+    "blank": resources + "blank-preview16x16.png",
 }
 
 
@@ -155,7 +158,8 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             """
             Help File
             """
-            cmd.helpFile = "src\Resources\HTML\info.html"
+            cmd.helpFile = resources + os.path.join("HTML", "info.html")
+            #"src\Resources\HTML\info.html"
 
             """
             Export Mode
@@ -196,7 +200,8 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 enabled=True,
                 isCheckBox=False
             )
-            auto_calc_weight.resourceFolder = "src/Resources/AutoCalcWeight_icon/"
+            auto_calc_weight.resourceFolder = resources + "AutoCalcWeight_icon"
+            #"src/Resources/AutoCalcWeight_icon/"
             auto_calc_weight.isFullWidth = True
 
             populateweight = 0
@@ -587,7 +592,8 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 enabled=True,
                 isCheckBox=False,
             )
-            frictionOverride.resourceFolder = "src\Resources\FrictionOverride_icon"
+            frictionOverride.resourceFolder = resources + "FrictionOverride_icon"
+            #"src\Resources\FrictionOverride_icon"
             frictionOverride.isFullWidth = True
 
             valueList = [1]
@@ -1176,25 +1182,29 @@ class MyPreSelectHandler(adsk.core.SelectionEventHandler):
                 if dropdownExportMode.selectedItem.name == "Robot":
                     if parent in _wheels:
                         self.cmd.setCursor(
-                            "src\Resources\MousePreselectIcons\mouse-remove-icon.png",
+                            resources + os.path.join("MousePreselectIcons", "mouse-remove-icon.png"),
+                            #"src\Resources\MousePreselectIcons\mouse-remove-icon.png",
                             0,
                             0,
                         )
                     elif parent not in _wheels:
                         self.cmd.setCursor(
-                            "src\Resources\MousePreselectIcons\mouse-add-icon.png", 0, 0
+                            resources + os.path.join("MousePreselectIcons", "mouse-add-icon.png"),
+                            #"src\Resources\MousePreselectIcons\mouse-add-icon.png", 0, 0
                         )
 
                 elif dropdownExportMode.selectedItem.name == "Field":
                     if preSelectedOcc in _gamepieces:
                         self.cmd.setCursor(
-                            "src\Resources\MousePreselectIcons\mouse-remove-icon.png",
+                            resources + os.path.join("MousePreselectIcons", "mouse-remove-icon.png"),
+                            #"src\Resources\MousePreselectIcons\mouse-remove-icon.png",
                             0,
                             0,
                         )
                     else:
                         self.cmd.setCursor(
-                            "src\Resources\MousePreselectIcons\mouse-add-icon.png", 0, 0
+                            resources + os.path.join("MousePreselectIcons", "mouse-add-icon.png"),
+                            #"src\Resources\MousePreselectIcons\mouse-add-icon.png", 0, 0
                         )
             else:
                 self.cmd.setCursor("", 0, 0)
@@ -1642,9 +1652,12 @@ def addJointToTable(joint):
             "Signal Type",
             dropDownStyle=adsk.core.DropDownStyles.LabeledIconDropDownStyle,
         )
-        signalType.listItems.add("‎", True, "src\Resources\PWM_icon")
-        signalType.listItems.add("‎", False, "src\Resources\CAN_icon")
-        signalType.listItems.add("‎", False, "src\Resources\PASSIVE_icon")
+        signalType.listItems.add("‎", True, resources + "PWM_icon")
+        #"src\Resources\PWM_icon")
+        signalType.listItems.add("‎", False, resources + "CAN_icon")
+        #"src\Resources\CAN_icon")
+        signalType.listItems.add("‎", False, resources + "PASSIVE_icon")
+        #"src\Resources\PASSIVE_icon")
         signalType.tooltip = "Signal type"
 
         row = jointTableInput.rowCount
@@ -1711,7 +1724,8 @@ def addWheelToTable(wheel):
         wheelType.listItems.add("Mecanum", False, "")
         wheelType.tooltip = "Wheel type"
         wheelType.tooltipDescription = "<Br>Omni-directional wheels can be used just like regular drive wheels but they have the advantage of being able to roll freely perpendicular to the drive direction.</Br>"
-        wheelType.toolClipFilename = "src\Resources\WheelIcons\omni-wheel-preview.png"
+        wheelType.toolClipFilename = resources + os.path.join("WheelIcons", "omni-wheel-preview.png")
+        #"src\Resources\WheelIcons\omni-wheel-preview.png"
 
         signalType = cmdInputs.addDropDownCommandInput(
             "signal_type",
@@ -1719,9 +1733,12 @@ def addWheelToTable(wheel):
             dropDownStyle=adsk.core.DropDownStyles.LabeledIconDropDownStyle,
         )
         signalType.isFullWidth = True
-        signalType.listItems.add("‎", True, "src\Resources\PWM_icon")
-        signalType.listItems.add("‎", False, "src\Resources\CAN_icon")
-        signalType.listItems.add("‎", False, "src\Resources\PASSIVE_icon")
+        signalType.listItems.add("‎", True, resources + "PWM_icon")
+        #"src\Resources\PWM_icon")
+        signalType.listItems.add("‎", False, resources + "CAN_icon")
+        #"src\Resources\CAN_icon")
+        signalType.listItems.add("‎", False, resources + "PASSIVE_icon")
+        #"src\Resources\PASSIVE_icon")
         signalType.tooltip = "Signal type"
 
         row = wheelTableInput.rowCount
