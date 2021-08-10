@@ -192,7 +192,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 "‎",
                 inputs,
                 checked=False,
-                tooltip="Automatically calculate the weight of your assembly.",
+                tooltip="Automatically calculate the weight of your robot assembly.",
                 enabled=True,
                 isCheckBox=False
             )
@@ -238,20 +238,6 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             )
 
             wheel_inputs = wheelConfig.children
-
-            """
-            Automatically Select Duplicates
-            """
-            global duplicateSelection
-            duplicateSelection = self.createBooleanInput(
-                "duplicate_selection",
-                "Select Duplicates",
-                wheel_inputs,
-                checked=True,
-                tooltip="Select duplicate wheel components.",
-                tooltipadvanced="When this is checked, all duplicate occurrences will be automatically selected.",
-                enabled=True,
-            )
 
             """
             Wheel Selection Table
@@ -318,6 +304,20 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 ),
                 0,
                 3,
+            )
+
+            """
+            Automatically Select Duplicates
+            """
+            global duplicateSelection
+            duplicateSelection = self.createBooleanInput(
+                "duplicate_selection",
+                "Select Duplicates",
+                wheel_inputs,
+                checked=True,
+                tooltip="Select duplicate wheel components.",
+                tooltipadvanced="When this is checked, all duplicate occurrences will be automatically selected.",
+                enabled=True,
             )
 
             """
