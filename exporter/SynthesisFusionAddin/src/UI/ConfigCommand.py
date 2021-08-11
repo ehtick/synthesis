@@ -159,7 +159,6 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             Help File
             """
             cmd.helpFile = resources + os.path.join("HTML", "info.html")
-            #"src\Resources\HTML\info.html"
 
             """
             Export Mode
@@ -201,7 +200,6 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 isCheckBox=False
             )
             auto_calc_weight.resourceFolder = resources + "AutoCalcWeight_icon"
-            #"src/Resources/AutoCalcWeight_icon/"
             auto_calc_weight.isFullWidth = True
 
             populateweight = 0
@@ -221,8 +219,8 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 "Weight Unit",
                 adsk.core.DropDownStyles.LabeledIconDropDownStyle,
             )
-            weight_unit.listItems.add("lbs", True)
-            weight_unit.listItems.add("kg", False)
+            weight_unit.listItems.add("‎", True, resources + "lbs_icon")
+            weight_unit.listItems.add("‎", False, resources + "kg_icon")
             weight_unit.tooltip = "Unit of mass"
 
             weightTableInput.addCommandInput(weight_name, 0, 0)
@@ -252,7 +250,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 "Wheel Table",
                 wheel_inputs,
                 4,
-                "1:2:2:1",
+                "2:4:2:2",
                 50,
             )
 
@@ -593,7 +591,6 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 isCheckBox=False,
             )
             frictionOverride.resourceFolder = resources + "FrictionOverride_icon"
-            #"src\Resources\FrictionOverride_icon"
             frictionOverride.isFullWidth = True
 
             valueList = [1]
@@ -1063,25 +1060,36 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
     def __init__(self, cmd):
         super().__init__()
         self.cmd = cmd
+        self.occurrences = []
+
+        for joint in gm.app.activeDocument.design.rootComponent.allJoints:
+            if joint.jointMotion.jointType != adsk.fusion.JointTypes.RevoluteJointType:
+                continue
+            self.occurrences.extend((joint.occurrenceOne, joint.occurrenceTwo))
+
+    def traverseAssembly(self, child_occurrences): # recursive traversal to check if children are jointed
+        for occ in child_occurrences:
+            if occ in self.occurrences:
+                return occ # jointed occurrence
+            if occ.childOccurrences: # if occurrence has children
+                self.traverseAssembly(occ.childOccurrences)
+        return None # no jointed occurrence found
 
     def wheelParent(self, occ):
         try:
-            occurrences = []
             parent = occ.assemblyContext
+            if parent == None:
+                return occ
 
-            for joint in gm.app.activeDocument.design.rootComponent.allJoints:
-                if joint.jointMotion.jointType != adsk.fusion.JointTypes.RevoluteJointType:
-                    continue
+            if occ in self.occurrences:
+                return occ
 
-                occurrences.extend((joint.occurrenceOne, joint.occurrenceTwo))
-            
             while parent != None:
-                for i in range(len(parent.childOccurrences)):
-                    if parent.childOccurrences.item(i) in occurrences:
-                        return parent
-                    parent = parent.assemblyContext
-            return occ
-        except AttributeError:
+                returned = self.traverseAssembly(parent.childOccurrences)
+                if returned != None:
+                    return parent
+                parent = parent.assemblyContext
+
             return occ
         except:
             if gm.ui:
@@ -1095,7 +1103,6 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
             selectedJoint = adsk.fusion.Joint.cast(args.selection.entity)
 
             if selectedOcc:
-                # gm.ui.messageBox(selectedOcc.assemblyContext.name)
                 parent = self.wheelParent(selectedOcc)
                 occurrenceList = (
                     gm.app.activeDocument.design.rootComponent.allOccurrencesByComponent(
@@ -1183,28 +1190,26 @@ class MyPreSelectHandler(adsk.core.SelectionEventHandler):
                     if parent in _wheels:
                         self.cmd.setCursor(
                             resources + os.path.join("MousePreselectIcons", "mouse-remove-icon.png"),
-                            #"src\Resources\MousePreselectIcons\mouse-remove-icon.png",
                             0,
                             0,
                         )
                     elif parent not in _wheels:
                         self.cmd.setCursor(
                             resources + os.path.join("MousePreselectIcons", "mouse-add-icon.png"),
-                            #"src\Resources\MousePreselectIcons\mouse-add-icon.png", 0, 0
+                            0,
+                            0,
                         )
 
                 elif dropdownExportMode.selectedItem.name == "Field":
                     if preSelectedOcc in _gamepieces:
                         self.cmd.setCursor(
                             resources + os.path.join("MousePreselectIcons", "mouse-remove-icon.png"),
-                            #"src\Resources\MousePreselectIcons\mouse-remove-icon.png",
                             0,
                             0,
                         )
                     else:
                         self.cmd.setCursor(
                             resources + os.path.join("MousePreselectIcons", "mouse-add-icon.png"),
-                            #"src\Resources\MousePreselectIcons\mouse-add-icon.png", 0, 0
                         )
             else:
                 self.cmd.setCursor("", 0, 0)
@@ -1653,11 +1658,8 @@ def addJointToTable(joint):
             dropDownStyle=adsk.core.DropDownStyles.LabeledIconDropDownStyle,
         )
         signalType.listItems.add("‎", True, resources + "PWM_icon")
-        #"src\Resources\PWM_icon")
         signalType.listItems.add("‎", False, resources + "CAN_icon")
-        #"src\Resources\CAN_icon")
         signalType.listItems.add("‎", False, resources + "PASSIVE_icon")
-        #"src\Resources\PASSIVE_icon")
         signalType.tooltip = "Signal type"
 
         row = jointTableInput.rowCount
@@ -1673,35 +1675,6 @@ def addJointToTable(joint):
 
 def addWheelToTable(wheel):
     try:
-
-        """
-        Potential selection count validation. 
-        (as to not allow too many wheel selections)
-        
-        if len(_wheels) > 10: return False
-
-        if len(_wheels) > 10:
-            isValid = False
-            while not isValid:
-                (input, isCancelled) = gm.ui.inputBox(
-                "The maximum number of occurrence selections has been reached.\n\
-                Cancel the dialog or expand the maximum selection size.\n", 
-                "Selection error", "10"
-                )
-                if isCancelled:
-                    return False
-                unitsManager = gm.app.activeDocument.design.unitsManager
-                try:
-                    realValue = unitsManager.evaluateExpression(input, unitsManager.defaultLengthUnits)
-                    isValid = True
-                except:
-                    #adsk.core.MessageBoxIconTypes.CriticalIconType
-                    #adsk.core.MessageBoxButtonTypes.OKCancelButtonType
-                    isValid = False
-                finally:
-                    gm.ui.messageBox(str(realValue))
-        """
-
         _wheels.append(wheel)
         cmdInputs = adsk.core.CommandInputs.cast(wheelTableInput.commandInputs)
 
@@ -1725,7 +1698,6 @@ def addWheelToTable(wheel):
         wheelType.tooltip = "Wheel type"
         wheelType.tooltipDescription = "<Br>Omni-directional wheels can be used just like regular drive wheels but they have the advantage of being able to roll freely perpendicular to the drive direction.</Br>"
         wheelType.toolClipFilename = resources + os.path.join("WheelIcons", "omni-wheel-preview.png")
-        #"src\Resources\WheelIcons\omni-wheel-preview.png"
 
         signalType = cmdInputs.addDropDownCommandInput(
             "signal_type",
@@ -1734,11 +1706,8 @@ def addWheelToTable(wheel):
         )
         signalType.isFullWidth = True
         signalType.listItems.add("‎", True, resources + "PWM_icon")
-        #"src\Resources\PWM_icon")
         signalType.listItems.add("‎", False, resources + "CAN_icon")
-        #"src\Resources\CAN_icon")
         signalType.listItems.add("‎", False, resources + "PASSIVE_icon")
-        #"src\Resources\PASSIVE_icon")
         signalType.tooltip = "Signal type"
 
         row = wheelTableInput.rowCount
