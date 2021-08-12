@@ -8,6 +8,7 @@ from ..Analytics.alert import showAnalyticsAlert
 from . import Helper, FileDialogConfig, OsHelper
 
 from ..Parser.ParseOptions import (
+    Gamepiece,
     ParseOptions,
     SignalType,
     _Joint,
@@ -196,6 +197,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 inputs,
                 checked=False,
                 tooltip="Automatically calculate the weight of your robot assembly.",
+                tooltipadvanced="This may take a moment.",
                 enabled=True,
                 isCheckBox=False
             )
@@ -211,7 +213,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 "",
                 adsk.core.ValueInput.createByString(str(populateweight)),
             )
-            weight_input.tooltip = "Weight"
+            weight_input.tooltip = "Robot weight"
 
             global weight_unit
             weight_unit = inputs.addDropDownCommandInput(
@@ -319,7 +321,10 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 wheel_inputs,
                 checked=True,
                 tooltip="Select duplicate wheel components.",
-                tooltipadvanced="When this is checked, all duplicate occurrences will be automatically selected.",
+                tooltipadvanced="""
+                When this is checked, all duplicate occurrences will be automatically selected.
+                <br>This feature may fail in some circumstances where duplicates connot by found.</br>
+                """,
                 enabled=True,
             )
 
@@ -439,14 +444,15 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             """
             Mass Units
             """
-            weight_unit = gamepiece_inputs.addDropDownCommandInput(
-                "weight_unit",
+            global weight_unit_f
+            weight_unit_f = gamepiece_inputs.addDropDownCommandInput(
+                "weight_unit_f",
                 "Unit of Mass",
                 adsk.core.DropDownStyles.LabeledIconDropDownStyle,
             )
-            weight_unit.listItems.add("lbs", True)
-            weight_unit.listItems.add("kg", False)
-            weight_unit.tooltip = "Configure the unit of mass for a gamepiece."
+            weight_unit_f.listItems.add("lbs", True)
+            weight_unit_f.listItems.add("kg", False)
+            weight_unit_f.tooltip = "Configure the unit of mass for a gamepiece."
 
             """
             Gamepiece Selection Table
@@ -458,7 +464,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 "Gamepiece",
                 gamepiece_inputs,
                 4,
-                "1:6:2:9",
+                "1:10:4:12",
                 50,
             )
 
@@ -692,6 +698,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
         cmd.executePreview.add(onExecutePreview)
         gm.handlers.append(onExecutePreview)
 
+        global onSelect
         onSelect = MySelectHandler(cmd)
         cmd.select.add(onSelect)
         gm.handlers.append(onSelect)
@@ -877,8 +884,9 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
 
                 renderer = 0
 
-                _exportWheels = []
-                _exportJoints = []
+                _exportWheels = [] # all selected wheels, formatted for parseOptions
+                _exportJoints = [] # all selected joints, formatted for parseOptions
+                _exportGamepieces = [] # TODO work on the code to populate Gamepiece
 
                 for row in range(wheelTableInput.rowCount):
                     if row == 0:
@@ -886,19 +894,14 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
 
                     wheelTypeIndex = wheelTableInput.getInputAtPosition(
                         row, 2
-                    ).selectedItem.index
+                    ).selectedItem.index # This must be either 0 or 1 for standard or omni
 
                     signalTypeIndex = wheelTableInput.getInputAtPosition(
                         row, 3
                     ).selectedItem.index
 
-                    wheelType = (
-                        wheelTypeIndex  # This must be either 0 or 1 for standard or omni
-                    )
-                    signalType = signalTypeIndex
-
                     _exportWheels.append(
-                        _Wheel(_wheels[row - 1].entityToken, wheelType, signalType)
+                        _Wheel(_wheels[row-1].entityToken, wheelTypeIndex, signalTypeIndex, onSelect.jointed_occ[row-1])
                     )
 
                 for row in range(jointTableInput.rowCount):
@@ -914,14 +917,13 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
                     ).selectedItem.index
 
                     parentJointToken = ""
-                    signalType = signalTypeIndex
 
                     if parentJointIndex == 0:
                         _exportJoints.append(
                             _Joint(
                                 _joints[row - 1].entityToken,
                                 JointParentType.ROOT,
-                                signalType,
+                                signalTypeIndex,
                             )  # Root
                         )
                         continue
@@ -941,8 +943,24 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
 
                     _exportJoints.append(
                         _Joint(
-                            _joints[row - 1].entityToken, parentJointToken, signalType
+                            _joints[row - 1].entityToken, parentJointToken, signalTypeIndex
                         )
+                    )
+
+                for row in range(wheelTableInput.rowCount):
+                    if row == 0:
+                        continue
+
+                    weightValue = gamepieceTableInput.getInputAtPosition(
+                        row, 2
+                    ).value
+
+                    frictionValue = gamepieceTableInput.getInputAtPosition(
+                        row, 3
+                    ).valueOne
+
+                    _exportGamepieces.append(
+                        Gamepiece(_gamepieces[row - 1].entityToken, weightValue, frictionValue)
                     )
 
                 options = ParseOptions(
@@ -952,6 +970,7 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
                     materials=renderer,
                     joints=_exportJoints,
                     wheels=_exportWheels,
+                    gamepieces=_exportGamepieces,
                 )
 
                 if options.parse(False):
@@ -1022,10 +1041,6 @@ class CommandExecutePreviewHandler(adsk.core.CommandEventHandler):
             eventArgs = adsk.core.CommandEventArgs.cast(args)
             inputs = eventArgs.command.commandInputs
 
-            # if len(_wheels) > 3:
-            #    eventArgs.executeFailed = True
-            #    eventArgs.executeFailedMessage = "[TYPE] joint types are not supported"
-
             if wheelTableInput.rowCount == 1:
                 removeWheelInput.isEnabled = False
             else:
@@ -1057,10 +1072,12 @@ class CommandExecutePreviewHandler(adsk.core.CommandEventHandler):
 
 
 class MySelectHandler(adsk.core.SelectionEventHandler):
+    
     def __init__(self, cmd):
         super().__init__()
         self.cmd = cmd
         self.occurrences = []
+        self.jointed_occ = []
 
         for joint in gm.app.activeDocument.design.rootComponent.allJoints:
             if joint.jointMotion.jointType != adsk.fusion.JointTypes.RevoluteJointType:
@@ -1078,18 +1095,18 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
     def wheelParent(self, occ):
         try:
             parent = occ.assemblyContext
-            if parent == None:
-                return occ
-
-            if occ in self.occurrences:
+            if parent == None or occ in self.occurrences:
+                self.jointed_occ.append("None")
                 return occ
 
             while parent != None:
                 returned = self.traverseAssembly(parent.childOccurrences)
                 if returned != None:
+                    self.jointed_occ.append(occ.joints.item(0).entityToken) # str
                     return parent
                 parent = parent.assemblyContext
 
+            self.jointed_occ.append("None")
             return occ
         except:
             if gm.ui:
@@ -1210,6 +1227,8 @@ class MyPreSelectHandler(adsk.core.SelectionEventHandler):
                     else:
                         self.cmd.setCursor(
                             resources + os.path.join("MousePreselectIcons", "mouse-add-icon.png"),
+                            0,
+                            0,
                         )
             else:
                 self.cmd.setCursor("", 0, 0)
@@ -1542,6 +1561,15 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                                 weight_input.value = float(self.allWeights[0])
                             else:
                                 weight_input.value = float(self.allWeights[1])
+
+            #elif cmdInput.id == "weight_unit_f":
+            #    dropdown =  adsk.core.DropDownCommandInput.cast(cmdInput)
+
+
+            #    if dropdown.selectedItem.index == 0:
+            #        
+            #    else:
+                    
         except:
             self.log.error("Failed:\n{}".format(traceback.format_exc()))
             if A_EP:
@@ -1736,8 +1764,16 @@ def addGamepieceToTable(gamepiece):
             "name_gp", "Occurrence name", gamepiece.name, 1, True
         )
 
+        physical = gamepiece.component.getPhysicalProperties(
+                adsk.fusion.CalculationAccuracy.LowCalculationAccuracy
+        )
+
+        value = round(
+            physical.mass, 2
+        )
+
         weight = cmdInputs.addValueInput(
-            "weight_gp", "Weight Input", "", adsk.core.ValueInput.createByString("0.0")
+            "weight_gp", "Weight Input", "", adsk.core.ValueInput.createByString(str(value))
         )
 
         valueList = [1]
@@ -1747,8 +1783,6 @@ def addGamepieceToTable(gamepiece):
         friction_coeff = cmdInputs.addFloatSliderListCommandInput(
             "friction_coeff", "", "", valueList
         )
-        # friction_coeff.isFullWidth = True
-        # friction_coeff.setText("0", "1 ")
         friction_coeff.valueOne = 0.5
 
         type.tooltip = "Type of field element."
