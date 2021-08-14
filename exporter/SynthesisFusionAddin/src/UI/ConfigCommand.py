@@ -1096,10 +1096,17 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
         self.allOccurrences = []
         self.jointed_occ = []
 
+        self.string = ""
+
         for joint in gm.app.activeDocument.design.rootComponent.allJoints:
             if joint.jointMotion.jointType != adsk.fusion.JointTypes.RevoluteJointType:
                 continue
             self.occurrences.extend((joint.occurrenceOne, joint.occurrenceTwo))
+            
+            self.string += "joint: " + joint.name
+            self.string += ("\n--> " + joint.occurrenceOne.name)
+            self.string += ("\n--> " + joint.occurrenceTwo.name + "\n\n")
+        gm.ui.messageBox(self.string)
 
     def traverseAssembly(self, child_occurrences, add=True): # recursive traversal to check if children are jointed
         for occ in child_occurrences:
@@ -1118,13 +1125,15 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
         try:
             parent = occ.assemblyContext
             if parent == None:
-                #gm.ui.messageBox("No parent, returning SELECTION:\n\n--> " + occ.name)
+                gm.ui.messageBox("No parent, returning SELECTION:\n\n--> " + occ.name)
+                
                 #self.jointed_occ.append("None")
                 self.allOccurrences.append(occ.entityToken)
                 return occ
 
             if occ in self.occurrences:
-                #gm.ui.messageBox("selection is jointed, returning SELECTION:\n\n--> " + occ.name)
+                gm.ui.messageBox("Selection is jointed, returning SELECTION:\n\n--> " + occ.name)
+                
                 #gm.ui.messageBox(occ.joints.item(0).name)
                 #self.jointed_occ.append(occ.joints.item(0).entityToken)
                 self.allOccurrences.append(occ.entityToken)
@@ -1133,19 +1142,19 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
             while parent != None:
                 returned = self.traverseAssembly(parent.childOccurrences)
                 if returned != None:
-                    #gm.ui.messageBox("jointed occurrence found, returning PARENT:\n\n--> " + occ.assemblyContext.name)
-                    #string = "Joints:\n\t"
-                    #gm.ui.messageBox("Occ name:\n\t" + returned.name)# + "\nJoint count:" + str(returned.joints.count))
-                    #for i in returned.component.allJoints:
-                    #    string += i.name
-                    #gm.ui.messageBox(string)
+                    #gm.ui.messageBox("Jointed occurrence found, returning PARENT:\n\n--> " + occ.assemblyContext.name)
+                    
+                    gm.ui.messageBox("jointed occurrence:\n--> " + returned.name + 
+                    "\n\njoint:\n--> " + returned.joints.item(0).name)
+
                     #self.jointed_occ.append(returned.joints.item(0).entityToken) # str
                     #return parent
                     return occ.assemblyContext
                 parent = parent.assemblyContext
 
+            gm.ui.messageBox("No jointed occurrence found, returning SELECTION:\n\n--> " + occ.name)
+
             #self.jointed_occ.append("None")
-            #gm.ui.messageBox("no jointed occurrence found, returning SELECTION:\n\n--> " + occ.name)
             self.allOccurrences.append(occ.entityToken)
             return occ
         except:
@@ -1171,14 +1180,14 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
                     if duplicateSelection.value:
                         for occ in occurrenceList:
                             if occ not in _wheels:
-                                self.maxWheelCount = addWheelToTable(occ)
+                                addWheelToTable(occ)
                             else:
-                                removeWheelFromTable(occ)
+                                removeWheelFromTable(_wheels.index(occ))
                     else:
                         if parent not in _wheels:
-                            self.maxWheelCount = addWheelToTable(parent)
+                            addWheelToTable(parent)
                         else:
-                            removeWheelFromTable(parent)
+                            removeWheelFromTable(_wheels.index(parent))
 
                 elif dropdownExportMode.selectedItem.name == "Field":
                     occurrenceList = (
@@ -1507,8 +1516,8 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                 if wheelTableInput.selectedRow == -1:
                     gm.ui.messageBox("Select a row to delete.")
                 else:
-                    wheel = _wheels[wheelTableInput.selectedRow - 1]
-                    removeWheelFromTable(wheel)
+                    index = wheelTableInput.selectedRow - 1
+                    removeWheelFromTable(index)
 
             elif cmdInput.id == "joint_delete":
                 gm.ui.activeSelections.clear()
@@ -1723,8 +1732,6 @@ def addJointToTable(joint):
 
 def addWheelToTable(wheel):
     try:
-        #onSelect.traverseAssembly(wheel.childOccurrences, True)
-
         _wheels.append(wheel)
         cmdInputs = adsk.core.CommandInputs.cast(wheelTableInput.commandInputs)
 
@@ -1826,11 +1833,9 @@ def addGamepieceToTable(gamepiece):
             gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
 
 
-def removeWheelFromTable(wheel):
+def removeWheelFromTable(index):
     try:
-        #onSelect.traverseAssembly(wheel.childOccurrences, False)
-        index = _wheels.index(wheel)
-        _wheels.remove(wheel)
+        del _wheels[index]
         wheelTableInput.deleteRow(index + 1)
     except:
         if gm.ui:
