@@ -26,7 +26,7 @@ from .Configuration.SerialCommand import (
     ExportMode,
 )
 
-import adsk.core, adsk.fusion, traceback
+import adsk.core, adsk.fusion, traceback, math
 from types import SimpleNamespace
 
 """
@@ -1052,10 +1052,20 @@ class CommandExecutePreviewHandler(adsk.core.CommandEventHandler):
             eventArgs = adsk.core.CommandEventArgs.cast(args)
             inputs = eventArgs.command.commandInputs
 
-            #if eventArgs.firingEvent.name == "OnExecutePreview":
-            #    command = eventArgs.command
+            #jointType = onSelect.selectedJoint.jointMotion.jointType
+            #if (
+            #    jointType != JointMotions.REVOLUTE.value
+            #    or jointType != JointMotions.SLIDER.value
+            #):
+            #    type = JointMotions(jointType).name
+            #    message = type.lower().replace("_", " ") + " joint types are not supported"
+            #    
             #    eventArgs.executeFailed = True
-            #    eventArgs.executeFailedMessage = "Joint type not supported"
+            #    eventArgs.executeFailedMessage = message
+
+            #if eventArgs.firingEvent.name == "":
+
+            #gm.ui.messageBox(eventArgs.objectType)
 
             if wheelTableInput.rowCount == 1:
                 removeWheelInput.isEnabled = False
@@ -1082,81 +1092,63 @@ class CommandExecutePreviewHandler(adsk.core.CommandEventHandler):
                 gm.app.activeDocument.design.rootComponent.opacity = 0.25
             else:
                 gm.app.activeDocument.design.rootComponent.opacity = 1
+
+            if not addFieldInput.isEnabled or not removeFieldInput:
+                for gamepiece in _gamepieces:
+                    gamepiece.component.opacity = 0.25
+            else:
+                gm.app.activeDocument.design.rootComponent.opacity = 1
+        except AttributeError:
+            pass
         except:
             if gm.ui:
                 gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
 
 
 class MySelectHandler(adsk.core.SelectionEventHandler):
-    
+
     def __init__(self, cmd):
         super().__init__()
         self.cmd = cmd
-        self.occurrences = []
-        self.allOccurrences = []
-        self.jointed_occ = []
+        self.occurrences = [] # all jointed occurrences in assembly
+        
+        self.allWheelPreselections = [] # all child occurrences of selections
+        self.allGamepiecePreselections = [] # all child gamepiece occurrences of selections
+        self.jointed_occ = [] # all joints connected to wheels
 
-        self.string = ""
+        self.selectedOcc = None
+        self.selectedJoint = None
 
         for joint in gm.app.activeDocument.design.rootComponent.allJoints:
             if joint.jointMotion.jointType != adsk.fusion.JointTypes.RevoluteJointType:
                 continue
             self.occurrences.extend((joint.occurrenceOne, joint.occurrenceTwo))
-            
-            self.string += "joint: " + joint.name
-            self.string += ("\n--> " + joint.occurrenceOne.name)
-            self.string += ("\n--> " + joint.occurrenceTwo.name + "\n\n")
-        gm.ui.messageBox(self.string)
 
-    def traverseAssembly(self, child_occurrences, add=True): # recursive traversal to check if children are jointed
+    def traverseAssembly(self, child_occurrences): # recursive traversal to check if children are jointed
         for occ in child_occurrences:
-            if add:
-                self.allOccurrences.append(occ.entityToken) 
-            else:
-                self.allOccurrences.remove(occ.entityToken)
-
             if occ in self.occurrences:
-                return occ # jointed occurrence
-            if occ.childOccurrences: # if occurrence has children
-                self.traverseAssembly(occ.childOccurrences, add)
+                return occ # return jointed occurrence
+
+            if occ.childOccurrences: # if occurrence has children, traverse sub-tree
+                self.traverseAssembly(occ.childOccurrences)
         return None # no jointed occurrence found
 
     def wheelParent(self, occ):
         try:
             parent = occ.assemblyContext
-            if parent == None:
-                gm.ui.messageBox("No parent, returning SELECTION:\n\n--> " + occ.name)
-                
-                #self.jointed_occ.append("None")
-                self.allOccurrences.append(occ.entityToken)
-                return occ
+            if parent == None: # no parent occurrence
+                return occ # return what is selected
 
-            if occ in self.occurrences:
-                gm.ui.messageBox("Selection is jointed, returning SELECTION:\n\n--> " + occ.name)
-                
-                #gm.ui.messageBox(occ.joints.item(0).name)
-                #self.jointed_occ.append(occ.joints.item(0).entityToken)
-                self.allOccurrences.append(occ.entityToken)
-                return occ
+            if occ in self.occurrences: # what is selected is directly jointed, no need to do child traversal
+                return occ # return what is selected
 
             while parent != None:
                 returned = self.traverseAssembly(parent.childOccurrences)
-                if returned != None:
-                    #gm.ui.messageBox("Jointed occurrence found, returning PARENT:\n\n--> " + occ.assemblyContext.name)
-                    
-                    gm.ui.messageBox("jointed occurrence:\n--> " + returned.name + 
-                    "\n\njoint:\n--> " + returned.joints.item(0).name)
-
-                    #self.jointed_occ.append(returned.joints.item(0).entityToken) # str
-                    #return parent
-                    return occ.assemblyContext
+                if returned != None: # jointed occurrence found in tree traversal
+                    return occ.assemblyContext # return jointed occurrence parent
                 parent = parent.assemblyContext
 
-            gm.ui.messageBox("No jointed occurrence found, returning SELECTION:\n\n--> " + occ.name)
-
-            #self.jointed_occ.append("None")
-            self.allOccurrences.append(occ.entityToken)
-            return occ
+            return occ # no jointed occurrence found, return what is selected
         except:
             if gm.ui:
                 gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
@@ -1165,12 +1157,12 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
         try:
             eventArgs = adsk.core.SelectionEventArgs.cast(args)
 
-            selectedOcc = adsk.fusion.Occurrence.cast(args.selection.entity)
-            selectedJoint = adsk.fusion.Joint.cast(args.selection.entity)
+            self.selectedOcc = adsk.fusion.Occurrence.cast(args.selection.entity)
+            self.selectedJoint = adsk.fusion.Joint.cast(args.selection.entity)
 
-            if selectedOcc:
+            if self.selectedOcc:
                 if dropdownExportMode.selectedItem.name == "Robot":
-                    parent = self.wheelParent(selectedOcc)
+                    parent = self.wheelParent(self.selectedOcc)
                     occurrenceList = (
                         gm.app.activeDocument.design.rootComponent.allOccurrencesByComponent(
                             parent.component
@@ -1192,29 +1184,26 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
                 elif dropdownExportMode.selectedItem.name == "Field":
                     occurrenceList = (
                         gm.app.activeDocument.design.rootComponent.allOccurrencesByComponent(
-                            selectedOcc.component
+                            self.selectedOcc.component
                         )
                     )
                     for occ in occurrenceList:
                         if occ not in _gamepieces:
                             addGamepieceToTable(occ)
                         else:
-                            removeGamePieceFromTable(occ)
+                            removeGamePieceFromTable(_gamepieces.index(occ))
 
-            elif selectedJoint:
-                jointType = selectedJoint.jointMotion.jointType
+            elif self.selectedJoint:
+                jointType = self.selectedJoint.jointMotion.jointType
                 if (
                     jointType == JointMotions.REVOLUTE.value
                     or jointType == JointMotions.SLIDER.value
                 ):
 
-                    if selectedJoint not in _joints:
-                        addJointToTable(selectedJoint)
+                    if self.selectedJoint not in _joints:
+                        addJointToTable(self.selectedJoint)
                     else:
-                        removeJointFromTable(selectedJoint)
-                else:
-                    type = JointMotions(jointType).name
-                    gm.ui.messageBox(type.lower().replace("_", " ") + " joint types are not supported")
+                        removeJointFromTable(self.selectedJoint)
         except:
             if gm.ui:
                 gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
@@ -1230,10 +1219,14 @@ class MyPreSelectHandler(adsk.core.SelectionEventHandler):
             design = adsk.fusion.Design.cast(gm.app.activeProduct)
             preSelectedOcc = adsk.fusion.Occurrence.cast(args.selection.entity)
 
+            if not preSelectedOcc or not design:
+                self.cmd.setCursor("", 0, 0)
+                return
+
             if preSelectedOcc and design:
                 if dropdownExportMode.selectedItem.name == "Robot":
-                    #if preSelectedOcc.entityToken in onSelect.allOccurrences:
-                    if preSelectedOcc in _wheels:
+                    if preSelectedOcc.entityToken in onSelect.allWheelPreselections:
+                    #if preSelectedOcc in _wheels:
                         self.cmd.setCursor(
                             resources + os.path.join("MousePreselectIcons", "mouse-remove-icon.png"),
                             0,
@@ -1247,7 +1240,7 @@ class MyPreSelectHandler(adsk.core.SelectionEventHandler):
                         )
 
                 elif dropdownExportMode.selectedItem.name == "Field":
-                    if preSelectedOcc in _gamepieces:
+                    if preSelectedOcc.entityToken in onSelect.allGamepiecePreselections:
                         self.cmd.setCursor(
                             resources + os.path.join("MousePreselectIcons", "mouse-remove-icon.png"),
                             0,
@@ -1258,9 +1251,7 @@ class MyPreSelectHandler(adsk.core.SelectionEventHandler):
                             resources + os.path.join("MousePreselectIcons", "mouse-add-icon.png"),
                             0,
                             0,
-                        )
-            else:
-                self.cmd.setCursor("", 0, 0)
+                        ) 
         except:
             if gm.ui:
                 gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
@@ -1364,6 +1355,7 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                         gamepieceConfig.isVisible = False
                         weightTableInput.isVisible = True
 
+                        addFieldInput.isEnabled = \
                         wheelConfig.isVisible = \
                         jointConfig.isVisible = True
 
@@ -1372,7 +1364,10 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                         gm.ui.activeSelections.clear()
                         gm.app.activeDocument.design.rootComponent.opacity = 1
 
+                        addWheelInput.isEnabled = \
+                        addJointInput.isEnabled = \
                         gamepieceConfig.isVisible = True
+
                         jointConfig.isVisible = \
                         wheelConfig.isVisible = \
                         weightTableInput.isVisible = False
@@ -1513,7 +1508,8 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                 gm.ui.activeSelections.clear()
 
                 addWheelInput.isEnabled = True
-                if wheelTableInput.selectedRow == -1:
+                if wheelTableInput.selectedRow == -1 or wheelTableInput.selectedRow == 0:
+                    wheelTableInput.selectedRow = 1
                     gm.ui.messageBox("Select a row to delete.")
                 else:
                     index = wheelTableInput.selectedRow - 1
@@ -1524,7 +1520,8 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
 
                 addJointInput.isEnabled = True
                 addWheelInput.isEnabled = True
-                if jointTableInput.selectedRow == -1:
+                if jointTableInput.selectedRow == -1 or jointTableInput.selectedRow == 0:
+                    jointTableInput.selectedRow == 1
                     gm.ui.messageBox("Select a row to delete.")
                 else:
                     joint = _joints[jointTableInput.selectedRow - 1]
@@ -1534,11 +1531,12 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                 gm.ui.activeSelections.clear()
 
                 addFieldInput.isEnabled = True
-                if gamepieceTableInput.selectedRow == -1:
+                if gamepieceTableInput.selectedRow == -1 or gamepieceTableInput.selectedRow == 0:
+                    gamepieceTableInput.selectedRow = 1
                     gm.ui.messageBox("Select a row to delete.")
                 else:
-                    gamepiece = _gamepieces[gamepieceTableInput.selectedRow - 1]
-                    removeGamePieceFromTable(gamepiece)
+                    index = gamepieceTableInput.selectedRow - 1
+                    removeGamePieceFromTable(index)
 
             elif cmdInput.id == "wheel_select":
                 self.reset()
@@ -1731,7 +1729,19 @@ def addJointToTable(joint):
 
 
 def addWheelToTable(wheel):
+    def addPreselections(child_occurrences):
+        for occ in child_occurrences:
+            onSelect.allWheelPreselections.append(occ.entityToken)
+            
+            if occ.childOccurrences:
+                addPreselections(occ.childOccurrences)
+
     try:
+        if wheel.childOccurrences:    
+            addPreselections(wheel.childOccurrences)
+        else:
+            onSelect.allWheelPreselections.append(wheel.entityToken)
+
         _wheels.append(wheel)
         cmdInputs = adsk.core.CommandInputs.cast(wheelTableInput.commandInputs)
 
@@ -1779,11 +1789,21 @@ def addWheelToTable(wheel):
         if gm.ui:
             gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
 
-
 def addGamepieceToTable(gamepiece):
-    try:
-        _gamepieces.append(gamepiece)
+    def addPreselections(child_occurrences):
+        for occ in child_occurrences:
+            onSelect.allGamepiecePreselections.append(occ.entityToken)
+            
+            if occ.childOccurrences:
+                addPreselections(occ.childOccurrences)
 
+    try:
+        if gamepiece.childOccurrences:
+            addPreselections(gamepiece.childOccurrences)
+        else:
+            onSelect.allGamepiecePreselections.append(gamepiece.entityToken)
+
+        _gamepieces.append(gamepiece)
         cmdInputs = adsk.core.CommandInputs.cast(gamepieceTableInput.commandInputs)
         blankIcon = cmdInputs.addImageCommandInput(
             "blank_gp", "Blank", iconPaths["blank"]
@@ -1832,15 +1852,29 @@ def addGamepieceToTable(gamepiece):
         if gm.ui:
             gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
 
-
 def removeWheelFromTable(index):
+    wheel = _wheels[index]
+
+    def removePreselections(child_occurrences):
+        for occ in child_occurrences:
+            onSelect.allWheelPreselections.remove(occ.entityToken)
+            
+            if occ.childOccurrences:
+                removePreselections(occ.childOccurrences)
+
     try:
+        if wheel.childOccurrences:
+            removePreselections(wheel.childOccurrences)
+        else:
+            onSelect.allWheelPreselections.remove(wheel.entityToken)
+
         del _wheels[index]
         wheelTableInput.deleteRow(index + 1)
+    except IndexError:
+        pass
     except:
         if gm.ui:
             gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
-
 
 def removeJointFromTable(joint):
     try:
@@ -1872,12 +1906,25 @@ def removeJointFromTable(joint):
         if gm.ui:
             gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
 
+def removeGamePieceFromTable(index):
+    gamepiece = _gamepieces[index]
 
-def removeGamePieceFromTable(gamepiece):
+    def removePreselections(child_occurrences):
+        for occ in child_occurrences:
+            onSelect.allGamepiecePreselections.remove(occ.entityToken)
+            
+            if occ.childOccurrences:
+                removePreselections(occ.childOccurrences)
     try:
-        index = _gamepieces.index(gamepiece)
-        _gamepieces.remove(gamepiece)
+        if gamepiece.childOccurrences:
+            removePreselections(_gamepieces[index].childOccurrences)
+        else:
+            onSelect.allGamepiecePreselections.remove(gamepiece.entityToken)
+
+        del _gamepieces[index]
         gamepieceTableInput.deleteRow(index + 1)
+    except IndexError:
+        pass
     except:
         if gm.ui:
             gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
