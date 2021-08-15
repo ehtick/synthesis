@@ -1084,18 +1084,21 @@ class CommandExecutePreviewHandler(adsk.core.CommandEventHandler):
 
             if not addWheelInput.isEnabled or not removeWheelInput:
                 for wheel in _wheels:
-                    wheel.component.opacity = 0.25
+                    wheel.component.opacity = 0.15
+                    #min=wheel.boundingBox.minPoint
+                    #max=wheel.boundingBox.maxPoint
+                    #wheel.boundingBox.create(min, max)
             else:
                 gm.app.activeDocument.design.rootComponent.opacity = 1
 
             if not addJointInput.isEnabled or not removeJointInput:
-                gm.app.activeDocument.design.rootComponent.opacity = 0.25
+                gm.app.activeDocument.design.rootComponent.opacity = 0.15
             else:
                 gm.app.activeDocument.design.rootComponent.opacity = 1
 
             if not addFieldInput.isEnabled or not removeFieldInput:
                 for gamepiece in _gamepieces:
-                    gamepiece.component.opacity = 0.25
+                    gamepiece.component.opacity = 0.15
             else:
                 gm.app.activeDocument.design.rootComponent.opacity = 1
         except AttributeError:
@@ -1373,8 +1376,7 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                         weightTableInput.isVisible = False
 
             elif cmdInput.id == "joint_config":
-                for occ in gm.app.activeDocument.design.rootComponent.allOccurrences:
-                    occ.component.opacity = 1
+                gm.app.activeDocument.design.rootComponent.opacity = 1
 
             elif cmdInput.id == "placeholder_w" or cmdInput.id == "name_w":
                 self.reset()
@@ -1494,7 +1496,7 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
             elif cmdInput.id == "joint_add":
                 self.reset()
 
-                addWheelInput.isEnabled = True
+                addWheelInput.isEnabled = \
                 jointSelect.isEnabled = True
                 addJointInput.isEnabled = False
 
@@ -1509,7 +1511,7 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
 
                 addWheelInput.isEnabled = True
                 if wheelTableInput.selectedRow == -1 or wheelTableInput.selectedRow == 0:
-                    wheelTableInput.selectedRow = 1
+                    wheelTableInput.selectedRow = wheelTableInput.rowCount-1
                     gm.ui.messageBox("Select a row to delete.")
                 else:
                     index = wheelTableInput.selectedRow - 1
@@ -1520,8 +1522,9 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
 
                 addJointInput.isEnabled = True
                 addWheelInput.isEnabled = True
+
                 if jointTableInput.selectedRow == -1 or jointTableInput.selectedRow == 0:
-                    jointTableInput.selectedRow == 1
+                    jointTableInput.selectedRow = jointTableInput.rowCount-1
                     gm.ui.messageBox("Select a row to delete.")
                 else:
                     joint = _joints[jointTableInput.selectedRow - 1]
@@ -1531,8 +1534,9 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                 gm.ui.activeSelections.clear()
 
                 addFieldInput.isEnabled = True
+
                 if gamepieceTableInput.selectedRow == -1 or gamepieceTableInput.selectedRow == 0:
-                    gamepieceTableInput.selectedRow = 1
+                    gamepieceTableInput.selectedRow = gamepieceTableInput.rowCount-1
                     gm.ui.messageBox("Select a row to delete.")
                 else:
                     index = gamepieceTableInput.selectedRow - 1
@@ -1587,16 +1591,7 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                             if self.isLbs:
                                 weight_input.value = float(self.allWeights[0])
                             else:
-                                weight_input.value = float(self.allWeights[1])
-
-            #elif cmdInput.id == "weight_unit_f":
-            #    dropdown =  adsk.core.DropDownCommandInput.cast(cmdInput)
-
-
-            #    if dropdown.selectedItem.index == 0:
-            #        
-            #    else:
-                    
+                                weight_input.value = float(self.allWeights[1])      
         except:
             self.log.error("Failed:\n{}".format(traceback.format_exc()))
             if A_EP:
@@ -1632,7 +1627,6 @@ def occurrenceToken(occ):
     except:
         if gm.ui:
             gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
-
 
 def addJointToTable(joint):
     try:
@@ -1726,7 +1720,6 @@ def addJointToTable(joint):
     except:
         if gm.ui:
             gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
-
 
 def addWheelToTable(wheel):
     def addPreselections(child_occurrences):
@@ -1928,7 +1921,6 @@ def removeGamePieceFromTable(index):
     except:
         if gm.ui:
             gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
-
 
 def createMeshGraphics():
     design = adsk.fusion.Design.cast(gm.app.activeProduct)
