@@ -55,8 +55,7 @@ _wheels = []
 _joints = []
 _gamepieces = []
 
-resources = os.path.join("src", "Resources")
-resources += resources[3]
+resources = OsHelper.getOSPath(".", "src", "Resources")
 
 iconPaths = {
     "omni": resources + os.path.join("WheelIcons", "omni-wheel-preview190x24.png"),
@@ -1084,12 +1083,14 @@ class CommandExecutePreviewHandler(adsk.core.CommandEventHandler):
 
             if not addWheelInput.isEnabled or not removeWheelInput:
                 for wheel in _wheels:
-                    wheel.component.opacity = 0.15
-                    #min=wheel.boundingBox.minPoint
-                    #max=wheel.boundingBox.maxPoint
-                    #wheel.boundingBox.create(min, max)
+                    wheel.component.opacity = 0.25
+                    createTextGraphics(wheel)
+
+                gm.app.activeViewport.refresh()
             else:
                 gm.app.activeDocument.design.rootComponent.opacity = 1
+                for group in gm.app.activeDocument.design.rootComponent.customGraphicsGroups:
+                    group.deleteMe()
 
             if not addJointInput.isEnabled or not removeJointInput:
                 gm.app.activeDocument.design.rootComponent.opacity = 0.15
@@ -1845,7 +1846,7 @@ def addGamepieceToTable(gamepiece):
         if gm.ui:
             gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
 
-def removeWheelFromTable(index):
+def removeWheelFromTable(index: int) -> None:
     wheel = _wheels[index]
 
     def removePreselections(child_occurrences):
@@ -1869,7 +1870,7 @@ def removeWheelFromTable(index):
         if gm.ui:
             gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
 
-def removeJointFromTable(joint):
+def removeJointFromTable(joint: adsk.fusion.Joint) -> None:
     try:
         index = _joints.index(joint)
         _joints.remove(joint)
@@ -1899,7 +1900,7 @@ def removeJointFromTable(joint):
         if gm.ui:
             gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
 
-def removeGamePieceFromTable(index):
+def removeGamePieceFromTable(index: int) -> None:
     gamepiece = _gamepieces[index]
 
     def removePreselections(child_occurrences):
@@ -1922,31 +1923,82 @@ def removeGamePieceFromTable(index):
         if gm.ui:
             gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
 
-def createMeshGraphics():
-    design = adsk.fusion.Design.cast(gm.app.activeProduct)
+def createTextGraphics(wheel:adsk.fusion.Occurrence) -> None:
 
-    if design:
-        for occ in _wheels:
-            for body in occ.bRepBodies:
-                graphics = design.rootComponent.customGraphicsGroups.add()
-                bodyMesh = body.meshManager.displayMeshes.bestMesh
-                coords = adsk.fusion.CustomGraphicsCoordinates.create(
-                    bodyMesh.nodeCoordinatesAsDouble
-                )
-                mesh = graphics.addMesh(
-                    coords,
-                    bodyMesh.nodeIndices,
-                    bodyMesh.normalVectorsAsDouble,
-                    bodyMesh.nodeIndices,
-                )
-                # redColor = adsk.core.Color.create(255,0,0,255)
-                # solidColor = adsk.fusion.CustomGraphicsSolidColorEffect.create(redColor)
-                # mesh.color = solidColor
+    try:
+        design = adsk.fusion.Design.cast(gm.app.activeProduct)
 
-                showThrough = adsk.fusion.CustomGraphicsShowThroughColorEffect.create(
-                    adsk.core.Color.create(255, 0, 0, 255), 0.2
-                )
-                body.color = showThrough
-                mesh.color = showThrough
+        boundingBox = wheel.boundingBox # occurrence bounding box
+        min = boundingBox.minPoint.asArray() # [x, y, z] min coords
+        max = boundingBox.maxPoint.asArray() # [x, y, z] max coords
 
-            gm.app.activeViewport.refresh()
+        length = max[0]-min[0] # length of bounding box
+        width = max[1]-min[1] # width of bounding box
+        height = max[2]-min[2] # height of bounding box
+
+        if design:
+            graphics = design.rootComponent.customGraphicsGroups.add()
+            matrix = adsk.core.Matrix3D.create()
+            matrix.translation = adsk.core.Vector3D.create(max[0], min[1], min[2])#max[2]-(height/2))
+
+            billBoard = adsk.fusion.CustomGraphicsBillBoard.create(adsk.core.Point3D.create(0, 0, 0))
+            billBoard.billBoardStyle = adsk.fusion.CustomGraphicsBillBoardStyles.ScreenBillBoardStyle
+
+            text = str(_wheels.index(wheel)+1)
+            graphicsText = graphics.addText(text, 'Arial Black', 6, matrix)
+            graphicsText.billBoarding = billBoard # make the text follow the camera
+            graphicsText.isSelectable = False # make it non-selectable
+            graphicsText.cullMode = adsk.fusion.CustomGraphicsCullModes.CustomGraphicsCullBack
+            graphicsText.color = adsk.fusion.CustomGraphicsSolidColorEffect.create(adsk.core.Color.create(0, 255, 0, 255)) # bright-green color
+                    
+            """
+            Code to create a bounding box around a wheel occurrence.
+            """
+            allIndices = [
+                min[0],         min[1],         max[2],
+                min[0],         min[1],         min[2],
+                max[0],         min[1],         min[2],
+
+                #min[0],         min[1],         min[2],
+                #min[0]+length,  min[1],         min[2],
+                #min[0]+length,  min[1]+width,   min[2],
+                #min[0],         min[1]+width,   min[2],
+                #min[0],         min[1],         min[2],
+
+                #max[0]-length,  max[1]-width,   max[2],
+                #max[0],         max[1]-width,   max[2],
+                #max[0],         max[1],         max[2],
+                #max[0]-length,  max[1],         max[2],
+                #max[0]-length,  max[1]-width,   max[2],
+
+                #max[0],         max[1]-width,   max[2],
+                #min[0]+length,  min[1],         min[2],
+                #min[0]+length,  min[1]+width,   min[2],
+                #max[0],         max[1],         max[2],
+                #max[0]-length,  max[1],         max[2],
+                #min[0],         min[1]+width,   min[2],
+            ]
+
+            indexPairs = []
+             
+            for index in range(0, len(allIndices), 3):
+                if index > len(allIndices)-5:
+                    continue
+                for i in allIndices[index:index+6]:
+                    indexPairs.append(i)
+
+            coords = adsk.fusion.CustomGraphicsCoordinates.create(
+                indexPairs
+            )
+            line = graphics.addLines(
+                coords,
+                [],
+                False,
+            )
+            line.color = adsk.fusion.CustomGraphicsSolidColorEffect.create(adsk.core.Color.create(0, 255, 0, 255)) # bright-green color
+            line.weight = 2
+            line.isScreenSpaceLineStyle = False
+            line.isSelectable = False
+    except:
+        if gm.ui:
+            gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
