@@ -1924,17 +1924,12 @@ def removeGamePieceFromTable(index: int) -> None:
             gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
 
 def createTextGraphics(wheel:adsk.fusion.Occurrence) -> None:
-
     try:
         design = adsk.fusion.Design.cast(gm.app.activeProduct)
 
         boundingBox = wheel.boundingBox # occurrence bounding box
         min = boundingBox.minPoint.asArray() # [x, y, z] min coords
         max = boundingBox.maxPoint.asArray() # [x, y, z] max coords
-
-        length = max[0]-min[0] # length of bounding box
-        width = max[1]-min[1] # width of bounding box
-        height = max[2]-min[2] # height of bounding box
 
         if design:
             graphics = design.rootComponent.customGraphicsGroups.add()
@@ -1952,31 +1947,12 @@ def createTextGraphics(wheel:adsk.fusion.Occurrence) -> None:
             graphicsText.color = adsk.fusion.CustomGraphicsSolidColorEffect.create(adsk.core.Color.create(0, 255, 0, 255)) # bright-green color
                     
             """
-            Code to create a bounding box around a wheel occurrence.
+            create a bounding box around a wheel.
             """
             allIndices = [
                 min[0],         min[1],         max[2],
                 min[0],         min[1],         min[2],
                 max[0],         min[1],         min[2],
-
-                #min[0],         min[1],         min[2],
-                #min[0]+length,  min[1],         min[2],
-                #min[0]+length,  min[1]+width,   min[2],
-                #min[0],         min[1]+width,   min[2],
-                #min[0],         min[1],         min[2],
-
-                #max[0]-length,  max[1]-width,   max[2],
-                #max[0],         max[1]-width,   max[2],
-                #max[0],         max[1],         max[2],
-                #max[0]-length,  max[1],         max[2],
-                #max[0]-length,  max[1]-width,   max[2],
-
-                #max[0],         max[1]-width,   max[2],
-                #min[0]+length,  min[1],         min[2],
-                #min[0]+length,  min[1]+width,   min[2],
-                #max[0],         max[1],         max[2],
-                #max[0]-length,  max[1],         max[2],
-                #min[0],         min[1]+width,   min[2],
             ]
 
             indexPairs = []
