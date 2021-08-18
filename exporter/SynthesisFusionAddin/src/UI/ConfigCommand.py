@@ -7,11 +7,6 @@ from ..configure import NOTIFIED, write_configuration
 from ..Analytics.alert import showAnalyticsAlert
 from . import Helper, FileDialogConfig, OsHelper, CustomGraphics, TableUtilities
 
-try:
-    from proto.proto_out.joint_pb2 import Joint, JointMotion
-except:
-    pass
-
 from ..Parser.ParseOptions import (
     Gamepiece,
     ParseOptions,
@@ -30,8 +25,13 @@ from .Configuration.SerialCommand import (
     ExportMode,
 )
 
-import adsk.core, adsk.fusion, traceback, math, sys
+import adsk.core, adsk.fusion, traceback
 from types import SimpleNamespace
+
+try:
+    from proto.proto_out.joint_pb2 import Joint, JointMotion
+except:
+    pass
 
 """
     - File to generate all the frontend command inputs and GUI elements
@@ -246,7 +246,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 "weight_input",
                 "Weight Input",
                 "",
-                adsk.core.ValueInput.createByString("0"),
+                adsk.core.ValueInput.createByString("0.0"),
             )
             weight_input.tooltip = "Robot weight"
             weight_input.tooltipDescription = "<i>(in pounds)</i>"
@@ -1082,7 +1082,7 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
                             _Joint(
                                 JointListGlobal[row - 1].entityToken,
                                 JointParentType.ROOT,
-                                signalTypeIndex,
+                                signalTypeIndex, # index of selected signal in dropdown
                             )  # parent joint GUID
                         )
                         continue
@@ -1270,14 +1270,10 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
         self.allWheelPreselections = [] # all child occurrences of selections
         self.allGamepiecePreselections = [] # all child gamepiece occurrences of selections
         
-        self.jointed_occ = [] # all joints connected to wheels
-
         self.selectedOcc = None # selected occurrence (if there is one)
         self.selectedJoint = None # selected joint (if there is one)
 
-        self.string = ""
-
-    def traverseAssembly(self, child_occurrences: adsk.fusion.OccurrenceList): # recursive traversal to check if children are jointed
+    def traverseAssembly(self, child_occurrences: adsk.fusion.OccurrenceList, jointedOcc): # recursive traversal to check if children are jointed
         """### Traverses the entire occurrence hierarchy to find a match (jointed occurrence) in self.occurrence
 
         Args:
@@ -1289,13 +1285,11 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
         """
         try:
             for occ in child_occurrences:
-                self.string += occ.name + "\n"
-                for joint in occ.joints:
-                    if joint.jointMotion.jointType == adsk.fusion.JointTypes.RevoluteJointType:
-                        return joint # return jointed occurrence
-
+                if occ in jointedOcc:
+                    return occ # occurrence that is jointed
+                
                 if occ.childOccurrences: # if occurrence has children, traverse sub-tree
-                    self.traverseAssembly(occ.childOccurrences)
+                    self.traverseAssembly(occ.childOccurrences, jointedOcc)
             return None # no jointed occurrence found
         except:
             logging.getLogger("{INTERNAL_ID}.UI.ConfigCommand.{self.__class__.__name__}.traverseAssembly()").error(
@@ -1324,28 +1318,39 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
             occ (Occurrence): Wheel parent
         """
         try:
-            parent = occ
+            parent = occ.assemblyContext
 
-            #for joint in occ.joints:
-            #    if joint.jointMotion.jointType == adsk.fusion.JointTypes.RevoluteJointType:
-            #        gm.ui.messageBox("joint name:\n--> " + joint.name)
-            #        return occ
+            for joint in occ.joints:
+                if joint.jointMotion.jointType == adsk.fusion.JointTypes.RevoluteJointType:
+                    gm.ui.messageBox("occurrence is jointed.\njoint name:\n--> " + joint.name)
+                    return occ
+
+            gm.ui.messageBox("occurrence is not directly jointed.")
             
-            #if parent == None: # no parent occurrence
-            #    gm.ui.messageBox("no parent")
-            #    return occ # return what is selected
+            if parent == None: # no parent occurrence
+                gm.ui.messageBox("no parent, returning selection")
+                return occ # return what is selected
 
-            while parent != None:
-                returned = self.traverseAssembly(parent.childOccurrences)
-                if returned != None: # jointed occurrence found in tree traversal
-                    gm.ui.messageBox("joint name:\n--> " + returned.name + "\n\noccurrence:\n-->" + returned.occurrenceOne.name + "\n\nparent occurrence:\n--> " + occ.assemblyContext.name)
-                    
-                    gm.ui.messageBox(self.string)
+            for joint in gm.app.activeDocument.design.rootComponent.allJoints:
+                if joint.jointMotion.jointType != adsk.fusion.JointTypes.RevoluteJointType:
+                    continue
+                
+                jointedOcc=[joint.occurrenceOne, joint.occurrenceTwo]
+                parentLevel=1
 
-                    return occ.assemblyContext # return jointed occurrence parent
-                parent = parent.assemblyContext
+                while parent != None: # loops until reaches top-level component
+                    if returned != None:
+                        for i in range(parentLevel):
+                            occ.assemblyContext
 
-            gm.ui.messageBox("no joints")
+                        gm.ui.messageBox("joint found:\n--> " + joint.name + "\n\nparent occurrence:\n--> " + occ.name)
+                        return [occ, joint]
+            
+                    parentLevel += 1
+                    returned = self.traverseAssembly(parent.childOccurrences, jointedOcc)
+                    parent = parent.assemblyContext
+
+            gm.ui.messageBox("reached the top of hierarchy | no joints, returning selection")
             return occ # no jointed occurrence found, return what is selected
         except:
             logging.getLogger("{INTERNAL_ID}.UI.ConfigCommand.{self.__class__.__name__}.wheelParent()").error(
@@ -1366,7 +1371,10 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
 
             if self.selectedOcc:
                 if dropdownExportMode.selectedItem.name == "Robot":
-                    parent = self.wheelParent(self.selectedOcc)
+                    wheelParent = self.wheelParent(self.selectedOcc)[0]
+                    parent = wheelParent[0]
+                    joint = wheelParent[1]
+
                     occurrenceList = (
                         gm.app.activeDocument.design.rootComponent.allOccurrencesByComponent(
                             parent.component
@@ -1409,9 +1417,10 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
                     else:
                         removeJointFromTable(self.selectedJoint)
         except:
-            logging.getLogger("{INTERNAL_ID}.UI.ConfigCommand.{self.__class__.__name__}").error(
-            "Failed:\n{}".format(traceback.format_exc())
-        )
+            gm.ui.messageBox("ERROR")
+            #logging.getLogger("{INTERNAL_ID}.UI.ConfigCommand.{self.__class__.__name__}").error(
+            #"Failed:\n{}".format(traceback.format_exc())
+            #)
 
 
 class MyPreSelectHandler(adsk.core.SelectionEventHandler):
