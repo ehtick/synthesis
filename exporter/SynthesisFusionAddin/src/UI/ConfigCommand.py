@@ -2,11 +2,15 @@ from logging import PlaceHolder
 from os import dup, fdopen, remove, strerror
 from enum import Enum
 from typing import Type
-from proto.proto_out.joint_pb2 import Joint, JointMotion
 from ..general_imports import *
 from ..configure import NOTIFIED, write_configuration
 from ..Analytics.alert import showAnalyticsAlert
 from . import Helper, FileDialogConfig, OsHelper, CustomGraphics, TableUtilities
+
+try:
+    from proto.proto_out.joint_pb2 import Joint, JointMotion
+except:
+    pass
 
 from ..Parser.ParseOptions import (
     Gamepiece,
