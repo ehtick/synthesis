@@ -792,7 +792,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             gm.handlers.append(onExecutePreview)
 
             global onSelect
-            onSelect = MySelectHandler(cmd)
+            onSelect = MySelectHandler()
             cmd.select.add(onSelect)
             gm.handlers.append(onSelect)
 
@@ -1259,21 +1259,19 @@ class CommandExecutePreviewHandler(adsk.core.CommandEventHandler):
 
 class MySelectHandler(adsk.core.SelectionEventHandler):
     """### Event fires when the user selects an entity.
-    ##### This is different from the preselect where an entity is shown as being available for selection as the mouse passes over the entity. This is the actual selection where the user has clicked the mouse on the entity.
+    ##### This is different from a preselection where an entity is shown as being available for selection as the mouse passes over the entity. This is the actual selection where the user has clicked the mouse on the entity.
 
     Args: SelectionEventHandler
     """
-    def __init__(self, cmd):
+    def __init__(self):
         super().__init__()
-        self.cmd = cmd
-        
         self.allWheelPreselections = [] # all child occurrences of selections
         self.allGamepiecePreselections = [] # all child gamepiece occurrences of selections
         
         self.selectedOcc = None # selected occurrence (if there is one)
         self.selectedJoint = None # selected joint (if there is one)
 
-    def traverseAssembly(self, child_occurrences: adsk.fusion.OccurrenceList, jointedOcc): # recursive traversal to check if children are jointed
+    def traverseAssembly(self, child_occurrences: adsk.fusion.OccurrenceList, jointedOcc: dict): # recursive traversal to check if children are jointed
         """### Traverses the entire occurrence hierarchy to find a match (jointed occurrence) in self.occurrence
 
         Args:
@@ -1285,8 +1283,9 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
         """
         try:
             for occ in child_occurrences:
-                if occ in jointedOcc:
-                    return occ # occurrence that is jointed
+                for joint, value in jointedOcc.items():
+                    if occ in value:
+                        return [joint, occ] # occurrence that is jointed
                 
                 if occ.childOccurrences: # if occurrence has children, traverse sub-tree
                     self.traverseAssembly(occ.childOccurrences, jointedOcc)
@@ -1319,43 +1318,55 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
         """
         try:
             parent = occ.assemblyContext
+            jointedOcc = {} # dictionary with all jointed occurrences
 
-            for joint in occ.joints:
-                if joint.jointMotion.jointType == adsk.fusion.JointTypes.RevoluteJointType:
-                    gm.ui.messageBox("occurrence is jointed.\njoint name:\n--> " + joint.name)
-                    return occ
+            try:
+                for joint in occ.joints:
+                    if joint.jointMotion.jointType == adsk.fusion.JointTypes.RevoluteJointType:
+                        gm.ui.messageBox("Selection is directly jointed.\nReturning selection.\n\n" + "Occurrence:\n--> " + occ.name + "\nJoint:\n--> " + joint.name)
+                        return [joint.name, occ]
+            except:
+                for joint in occ.component.joints:
+                    if joint.jointMotion.jointType == adsk.fusion.JointTypes.RevoluteJointType:
+                        gm.ui.messageBox("Selection is directly jointed.\nReturning selection.\n\n" + "Occurrence:\n--> " + occ.name + "\nJoint:\n--> " + joint.name)
+                        return [joint.name, occ]
 
-            gm.ui.messageBox("occurrence is not directly jointed.")
-            
             if parent == None: # no parent occurrence
-                gm.ui.messageBox("no parent, returning selection")
-                return occ # return what is selected
+                gm.ui.messageBox("Selection has no parent occurrence.\nReturning selection.\n\n" + "Occurrence:\n--> " + occ.name + "\nJoint:\n--> NONE")
+                return [None, occ] # return what is selected
 
             for joint in gm.app.activeDocument.design.rootComponent.allJoints:
                 if joint.jointMotion.jointType != adsk.fusion.JointTypes.RevoluteJointType:
                     continue
-                
-                jointedOcc=[joint.occurrenceOne, joint.occurrenceTwo]
-                parentLevel=1
+                jointedOcc[joint.name] = [joint.occurrenceOne, joint.occurrenceTwo]
 
-                while parent != None: # loops until reaches top-level component
-                    if returned != None:
-                        for i in range(parentLevel):
-                            occ.assemblyContext
-
-                        gm.ui.messageBox("joint found:\n--> " + joint.name + "\n\nparent occurrence:\n--> " + occ.name)
-                        return [occ, joint]
+            parentLevel = 0 # the number of nodes above the one selected
+            returned = None # the returned value of traverseAssembly()
+            parentOccurrence = occ # the parent occurrence that will be returned
+            treeParent = parent # each parent that will traverse up in algorithm.
             
-                    parentLevel += 1
-                    returned = self.traverseAssembly(parent.childOccurrences, jointedOcc)
-                    parent = parent.assemblyContext
+            while treeParent != None: # loops until reaches top-level component
+                returned = self.traverseAssembly(treeParent.childOccurrences, jointedOcc)
 
-            gm.ui.messageBox("reached the top of hierarchy | no joints, returning selection")
-            return occ # no jointed occurrence found, return what is selected
+                if returned != None:
+                    for i in range(parentLevel):
+                        parentOccurrence = parentOccurrence.assemblyContext
+                    
+                    gm.ui.messageBox("Joint found.\nReturning parent occurrence.\n\n" + "Selected occurrence:\n--> " + occ.name + "\nParent:\n--> " + parentOccurrence.name + "\nJoint:\n--> " + returned[0] + "\nNodes above selection:\n--> " + str(parentLevel))
+                    return [returned[0], parentOccurrence]
+                
+                parentLevel += 1
+                treeParent = treeParent.assemblyContext
+            gm.ui.messageBox("No jointed occurrence found.\nReturning selection.\n\n" + "Occurrence:\n--> " + occ.name + "\nJoint:\n--> NONE")
+            return [None, occ] # no jointed occurrence found, return what is selected
         except:
+            if gm.ui:
+                gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
             logging.getLogger("{INTERNAL_ID}.UI.ConfigCommand.{self.__class__.__name__}.wheelParent()").error(
             "Failed:\n{}".format(traceback.format_exc())
         )
+            gm.ui.messageBox("Selection's component has no referenced joints.\nReturning selection.\n\n" + "Occurrence:\n--> " + occ.name + "\nJoint:\n--> NONE")
+            return [None, occ]
         
     def notify(self, args):
         """### Notify member is called when a selection event is triggered.
@@ -1371,13 +1382,14 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
 
             if self.selectedOcc:
                 if dropdownExportMode.selectedItem.name == "Robot":
-                    wheelParent = self.wheelParent(self.selectedOcc)[0]
-                    parent = wheelParent[0]
-                    joint = wheelParent[1]
+                    returned = self.wheelParent(self.selectedOcc)
+                    
+                    wheelJoint = returned[0]
+                    wheelParent = returned[1]
 
                     occurrenceList = (
                         gm.app.activeDocument.design.rootComponent.allOccurrencesByComponent(
-                            parent.component
+                            wheelParent.component
                         )
                     )
 
@@ -1388,10 +1400,10 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
                             else:
                                 removeWheelFromTable(WheelListGlobal.index(occ))
                     else:
-                        if parent not in WheelListGlobal:
-                            addWheelToTable(parent)
+                        if wheelParent not in WheelListGlobal:
+                            addWheelToTable(wheelParent)
                         else:
-                            removeWheelFromTable(WheelListGlobal.index(parent))
+                            removeWheelFromTable(WheelListGlobal.index(wheelParent))
 
                 elif dropdownExportMode.selectedItem.name == "Field":
                     occurrenceList = (
@@ -1417,7 +1429,8 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
                     else:
                         removeJointFromTable(self.selectedJoint)
         except:
-            gm.ui.messageBox("ERROR")
+            if gm.ui:
+                gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
             #logging.getLogger("{INTERNAL_ID}.UI.ConfigCommand.{self.__class__.__name__}").error(
             #"Failed:\n{}".format(traceback.format_exc())
             #)
