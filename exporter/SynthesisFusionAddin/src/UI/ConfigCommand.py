@@ -1001,18 +1001,6 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
             if mode_dropdown.selectedItem.name == "Synthesis Exporter":
                 mode = 5
 
-            # Get the values from the command inputs.
-            try:
-                self.writeConfiguration(eventArgs.command.commandInputs)
-                self.log.info("Wrote Configuration")
-
-                # if it's different
-                if self.current.toJSON() != self.previous:
-                    Helper.writeConfigure(self.current.toJSON())
-            except:
-                self.log.error("Failed:\n{}".format(traceback.format_exc()))
-                gm.ui.messageBox("Failed to read previous File Export Configuration")
-
             if mode == 5:
                 savepath = FileDialogConfig.SaveFileDialog(
                     defaultPath=self.fp, ext="Synthesis File (*.synth)"
@@ -1063,7 +1051,7 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
                             WheelListGlobal[row-1].entityToken,
                             wheelTypeIndex,
                             signalTypeIndex,
-                            onSelect.wheel_joints[row-1]
+                            onSelect.wheel_joints[row-1] # GUID of wheel joint. if no joint found, default to None
                         )
                     )
 
@@ -1174,50 +1162,6 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
             logging.getLogger("{INTERNAL_ID}.UI.ConfigCommand.{self.__class__.__name__}").error(
             "Failed:\n{}".format(traceback.format_exc())
         )
-
-    def writeConfiguration(self, rootCommandInput: adsk.core.CommandInputs):
-        """Simple hard coded function to save the parameters of the export to the file
-
-        - This is horribly written but im in a rush
-        - Should have most likely been a map that could be serialized easily
-
-        Args:
-            rootCommandInput (adsk.core.CommandInputs): Base Command Inputs
-        """
-        if self.current:
-            self.current.filePath = self.fp
-            _general = self.current.general
-            _advanced = self.current.advanced
-
-            generalSettingsInputs = rootCommandInput.itemById("general_settings").children
-            advancedSettingsInputs = rootCommandInput.itemById(
-                "advanced_settings"
-            ).children
-
-            """
-            ##Removed this for now, since we are discarding SerialCommand.py
-
-            if generalSettingsInputs and _general:
-                try:
-                    _general.material.checked = generalSettingsInputs.itemById("materials").value
-                    _general.joints.checked = generalSettingsInputs.itemById("joints").value
-                    _general.rigidGroups.checked = generalSettingsInputs.itemById("rigidGroups").value
-
-                except:
-                    # this will force an error - ignore for now
-                    pass
-
-            if advancedSettingsInputs and _advanced:
-                try:
-                    _advanced.friction.checked = advancedSettingsInputs.itemById("friction").value
-                    _advanced.density.checked = advancedSettingsInputs.itemById("density").value
-                    _advanced.mass.checked = advancedSettingsInputs.itemById("mass").value
-                    _advanced.volume.checked = advancedSettingsInputs.itemById("volume").value
-                    _advanced.surfaceArea.checked = advancedSettingsInputs.itemById("surfacearea").value
-                    _advanced.com.checked = advancedSettingsInputs.itemById("com").value
-                except:
-                    pass
-            """
 
 
 class CommandExecutePreviewHandler(adsk.core.CommandEventHandler):
