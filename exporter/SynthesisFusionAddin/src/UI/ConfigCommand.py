@@ -1,4 +1,3 @@
-from logging import PlaceHolder
 from os import dup, fdopen, remove, strerror
 from enum import Enum
 from typing import Type
@@ -9,6 +8,7 @@ from . import Helper, FileDialogConfig, OsHelper, CustomGraphics, TableUtilities
 
 from ..Parser.ParseOptions import (
     Gamepiece,
+    Mode,
     ParseOptions,
     SignalType,
     _Joint,
@@ -25,7 +25,7 @@ from .Configuration.SerialCommand import (
     ExportMode,
 )
 
-import adsk.core, adsk.fusion, traceback
+import adsk.core, adsk.fusion, traceback, logging
 from types import SimpleNamespace
 
 try:
@@ -520,6 +520,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             auto_calc_weight_f.resourceFolder = resources + "AutoCalcWeight_icon"
             auto_calc_weight_f.isFullWidth = True
 
+            global weight_unit_f
             weight_unit_f = gamepiece_inputs.addDropDownCommandInput(
                 "weight_unit_f",
                 "Unit of Mass",
@@ -1039,6 +1040,8 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
                 _exportWheels = [] # all selected wheels, formatted for parseOptions
                 _exportJoints = [] # all selected joints, formatted for parseOptions
                 _exportGamepieces = [] # TODO work on the code to populate Gamepiece
+                _robotWeight = float
+                _mode = Mode
 
                 """
                 Loops through all rows in the wheel table to extract all the input values
@@ -1056,8 +1059,12 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
                     ).selectedItem.index
 
                     _exportWheels.append(
-                        _Wheel(WheelListGlobal[row-1].entityToken, wheelTypeIndex, signalTypeIndex)
-                        #, onSelect.jointed_occ[row-1])
+                        _Wheel(
+                            WheelListGlobal[row-1].entityToken,
+                            wheelTypeIndex,
+                            signalTypeIndex,
+                            onSelect.wheel_joints[row-1]
+                        )
                     )
 
                 """
@@ -1105,6 +1112,7 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
                             JointListGlobal[row - 1].entityToken, parentJointToken, signalTypeIndex
                         )
                     )
+                
                 """
                 Loops through all rows in the gamepiece table to extract the input values
                 """
@@ -1116,6 +1124,9 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
                         row, 2
                     ).value # weight/mass input, float
 
+                    if weight_unit_f.selectedItem.index == 0:
+                        weightValue /= 2.2046226218
+
                     frictionValue = gamepieceTableInput.getInputAtPosition(
                         row, 3
                     ).valueOne # friction value, float
@@ -1123,6 +1134,22 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
                     _exportGamepieces.append(
                         Gamepiece(GamepieceListGlobal[row - 1].entityToken, weightValue, frictionValue)
                     )
+                
+                """
+                Robot Weight
+                """
+                if weight_unit.selectedItem.index == 0:
+                    _robotWeight = float(weight_input.value) / 2.2046226218
+                else:
+                    _robotWeight = float(weight_input.value)
+
+                """
+                Export Mode
+                """
+                if dropdownExportMode.selectedItem.index == 0:
+                    _mode = Mode.Synthesis
+                elif dropdownExportMode.selectedItem.index == 1:
+                    _mode = Mode.SynthesisField
 
                 options = ParseOptions(
                     savepath,
@@ -1132,6 +1159,8 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
                     joints=_exportJoints,
                     wheels=_exportWheels,
                     gamepieces=_exportGamepieces,
+                    weight=_robotWeight,
+                    mode=_mode
                 )
 
                 if options.parse(False):
@@ -1271,6 +1300,8 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
         self.selectedOcc = None # selected occurrence (if there is one)
         self.selectedJoint = None # selected joint (if there is one)
 
+        self.wheel_joints = []
+
     def traverseAssembly(self, child_occurrences: adsk.fusion.OccurrenceList, jointedOcc: dict): # recursive traversal to check if children are jointed
         """### Traverses the entire occurrence hierarchy to find a match (jointed occurrence) in self.occurrence
 
@@ -1323,22 +1354,22 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
             try:
                 for joint in occ.joints:
                     if joint.jointMotion.jointType == adsk.fusion.JointTypes.RevoluteJointType:
-                        gm.ui.messageBox("Selection is directly jointed.\nReturning selection.\n\n" + "Occurrence:\n--> " + occ.name + "\nJoint:\n--> " + joint.name)
-                        return [joint.name, occ]
+                        #gm.ui.messageBox("Selection is directly jointed.\nReturning selection.\n\n" + "Occurrence:\n--> " + occ.name + "\nJoint:\n--> " + joint.name)
+                        return [joint.entityToken, occ]
             except:
                 for joint in occ.component.joints:
                     if joint.jointMotion.jointType == adsk.fusion.JointTypes.RevoluteJointType:
-                        gm.ui.messageBox("Selection is directly jointed.\nReturning selection.\n\n" + "Occurrence:\n--> " + occ.name + "\nJoint:\n--> " + joint.name)
-                        return [joint.name, occ]
+                        #gm.ui.messageBox("Selection is directly jointed.\nReturning selection.\n\n" + "Occurrence:\n--> " + occ.name + "\nJoint:\n--> " + joint.name)
+                        return [joint.entityToken, occ]
 
             if parent == None: # no parent occurrence
-                gm.ui.messageBox("Selection has no parent occurrence.\nReturning selection.\n\n" + "Occurrence:\n--> " + occ.name + "\nJoint:\n--> NONE")
+                #gm.ui.messageBox("Selection has no parent occurrence.\nReturning selection.\n\n" + "Occurrence:\n--> " + occ.name + "\nJoint:\n--> NONE")
                 return [None, occ] # return what is selected
 
             for joint in gm.app.activeDocument.design.rootComponent.allJoints:
                 if joint.jointMotion.jointType != adsk.fusion.JointTypes.RevoluteJointType:
                     continue
-                jointedOcc[joint.name] = [joint.occurrenceOne, joint.occurrenceTwo]
+                jointedOcc[joint.entityToken] = [joint.occurrenceOne, joint.occurrenceTwo]
 
             parentLevel = 0 # the number of nodes above the one selected
             returned = None # the returned value of traverseAssembly()
@@ -1352,20 +1383,18 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
                     for i in range(parentLevel):
                         parentOccurrence = parentOccurrence.assemblyContext
                     
-                    gm.ui.messageBox("Joint found.\nReturning parent occurrence.\n\n" + "Selected occurrence:\n--> " + occ.name + "\nParent:\n--> " + parentOccurrence.name + "\nJoint:\n--> " + returned[0] + "\nNodes above selection:\n--> " + str(parentLevel))
+                    #gm.ui.messageBox("Joint found.\nReturning parent occurrence.\n\n" + "Selected occurrence:\n--> " + occ.name + "\nParent:\n--> " + parentOccurrence.name + "\nJoint:\n--> " + returned[0] + "\nNodes above selection:\n--> " + str(parentLevel))
                     return [returned[0], parentOccurrence]
                 
                 parentLevel += 1
                 treeParent = treeParent.assemblyContext
-            gm.ui.messageBox("No jointed occurrence found.\nReturning selection.\n\n" + "Occurrence:\n--> " + occ.name + "\nJoint:\n--> NONE")
+            #gm.ui.messageBox("No jointed occurrence found.\nReturning selection.\n\n" + "Occurrence:\n--> " + occ.name + "\nJoint:\n--> NONE")
             return [None, occ] # no jointed occurrence found, return what is selected
         except:
-            if gm.ui:
-                gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
             logging.getLogger("{INTERNAL_ID}.UI.ConfigCommand.{self.__class__.__name__}.wheelParent()").error(
             "Failed:\n{}".format(traceback.format_exc())
         )
-            gm.ui.messageBox("Selection's component has no referenced joints.\nReturning selection.\n\n" + "Occurrence:\n--> " + occ.name + "\nJoint:\n--> NONE")
+            #gm.ui.messageBox("Selection's component has no referenced joints.\nReturning selection.\n\n" + "Occurrence:\n--> " + occ.name + "\nJoint:\n--> NONE")
             return [None, occ]
         
     def notify(self, args):
@@ -1384,7 +1413,7 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
                 if dropdownExportMode.selectedItem.name == "Robot":
                     returned = self.wheelParent(self.selectedOcc)
                     
-                    wheelJoint = returned[0]
+                    self.wheel_joints.append(returned[0])
                     wheelParent = returned[1]
 
                     occurrenceList = (
@@ -1937,6 +1966,7 @@ class MyCommandDestroyHandler(adsk.core.CommandEventHandler):
             WheelListGlobal.clear()
             JointListGlobal.clear()
             GamepieceListGlobal.clear()
+
             gm.ui.activeSelections.clear()
         except:
             logging.getLogger("{INTERNAL_ID}.UI.ConfigCommand.{self.__class__.__name__}").error(
