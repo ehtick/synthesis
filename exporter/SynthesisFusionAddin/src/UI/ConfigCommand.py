@@ -55,6 +55,8 @@ duplicateSelection = None
 dropdownExportMode = None
 weightUnit = None
 
+ROOT_COMP = gm.app.activeDocument.design.rootComponent
+
 """
     - These lists are very crucial.
     - This contain all of the selected:
@@ -471,7 +473,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 3,
             )
 
-            for joint in gm.app.activeDocument.design.rootComponent.allJoints:
+            for joint in ROOT_COMP.allJoints:
                 if (
                     joint.jointMotion.jointType == JointMotions.REVOLUTE.value
                     or joint.jointMotion.jointType == JointMotions.SLIDER.value
@@ -1207,21 +1209,21 @@ class CommandExecutePreviewHandler(adsk.core.CommandEventHandler):
 
                 gm.app.activeViewport.refresh()
             else:
-                gm.app.activeDocument.design.rootComponent.opacity = 1
-                for group in gm.app.activeDocument.design.rootComponent.customGraphicsGroups:
+                ROOT_COMP.opacity = 1
+                for group in ROOT_COMP.customGraphicsGroups:
                     group.deleteMe()
 
             if not addJointInput.isEnabled or not removeJointInput:
-                gm.app.activeDocument.design.rootComponent.opacity = 0.15
+                ROOT_COMP.opacity = 0.15
             else:
-                gm.app.activeDocument.design.rootComponent.opacity = 1
+                ROOT_COMP.opacity = 1
 
             if not addFieldInput.isEnabled or not removeFieldInput:
                 for gamepiece in GamepieceListGlobal:
                     gamepiece.component.opacity = 0.25
                     CustomGraphics.createTextGraphics(gamepiece, GamepieceListGlobal)
             else:
-                gm.app.activeDocument.design.rootComponent.opacity = 1
+                ROOT_COMP.opacity = 1
         except AttributeError:
             pass
         except:
@@ -1310,7 +1312,7 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
                 #gm.ui.messageBox("Selection has no parent occurrence.\nReturning selection.\n\n" + "Occurrence:\n--> " + occ.name + "\nJoint:\n--> NONE")
                 return [None, occ] # return what is selected
 
-            for joint in gm.app.activeDocument.design.rootComponent.allJoints:
+            for joint in ROOT_COMP.allJoints:
                 if joint.jointMotion.jointType != adsk.fusion.JointTypes.RevoluteJointType:
                     continue
                 jointedOcc[joint.entityToken] = [joint.occurrenceOne, joint.occurrenceTwo]
@@ -1361,7 +1363,7 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
                     wheelParent = returned[1]
 
                     occurrenceList = (
-                        gm.app.activeDocument.design.rootComponent.allOccurrencesByComponent(
+                        ROOT_COMP.allOccurrencesByComponent(
                             wheelParent.component
                         )
                     )
@@ -1380,7 +1382,7 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
 
                 elif dropdownExportMode.selectedItem.name == "Field":
                     occurrenceList = (
-                        gm.app.activeDocument.design.rootComponent.allOccurrencesByComponent(
+                        ROOT_COMP.allOccurrencesByComponent(
                             self.selectedOcc.component
                         )
                     )
@@ -1485,6 +1487,78 @@ class MyPreselectEndHandler(adsk.core.SelectionEventHandler):
         )
 
 
+class FullMassCalculuation():
+    def __init__(self):
+        self.progressDialog = gm.app.userInterface.createProgressDialog()
+
+        self.totalMass = 0.0
+        self.currentBRepCount = 0
+        self.bRepBodyCount = ROOT_COMP.bRepBodies.count
+
+        self.currentOccCount = 0
+        self.occurrenceCount = ROOT_COMP.allOccurrences.count
+        self.currentValue = 0
+
+        self.totalIterations = self.bRepBodyCount + self.occurrenceCount + 1
+
+        self.progressDialog.title = "Calculating Assembly Mass"
+        self.progressDialog.minimumValue = 0
+        self.progressDialog.maximumValue = self.totalIterations
+        self.progressDialog.show(
+                "Mass Calculation", "Currently on %v of %m", 0, self.totalIterations
+            )
+
+    def _format(self):
+        out = f"Mass: \t {round(self.totalMass, 2)} \n"
+        out += f"\t BRepBodies: \t[ {self.currentBRepCount} / {self.bRepBodyCount}]\n"
+        out += f"\t Occurrences: \t[ {self.currentOccCount} / {self.occurrenceCount} ]\n"
+        out += f"{self.currentMessage}"
+
+        return out
+
+    def addBRep(self, name=None):
+        self.currentValue += 1
+        self.currentBRepCount += 1
+        self.currentMessage = f"BRepBody {name}"
+        self.update()
+
+    def addOccurrence(self, name=None):
+        self.currentValue += 1
+        self.currentOccCount += 1
+        self.currentMessage = f"Occurrence {name}"
+        self.update()
+
+    def update(self):
+        self.progressDialog.message = self._format()
+        self.progressDialog.progressValue = self.currentValue
+        self.value = self.currentValue
+
+    def wasCancelled(self) -> bool:
+        return self.progressDialog.wasCancelled
+
+    def bRepMassInRoot(self):
+        for body in ROOT_COMP.bRepBodies:
+            physical = body.getPhysicalProperties(
+                adsk.fusion.CalculationAccuracy.LowCalculationAccuracy
+            )
+            self.totalMass += physical.mass
+            self.addBRep(body.name)
+
+    def traverseOccurrenceHierarchy(self):
+        for occ in ROOT_COMP.allOccurrences:
+            comp = occ.component
+
+            for body in comp.bRepBodies:
+                physical = body.getPhysicalProperties(
+                    adsk.fusion.CalculationAccuracy.LowCalculationAccuracy
+                )
+                self.totalMass += physical.mass
+            self.addOccurrence(occ.name)
+
+    def getTotalMass(self):
+        return self.totalMass
+
+
 class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
     """### Gets an event that is fired whenever an input value is changed.
         - Button pressed, selection made, switching tabs, etc...
@@ -1526,18 +1600,20 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
         """
         try:
             if gm.app.activeDocument.design:
-                rootComponent = gm.app.activeDocument.design.rootComponent
-                physical = rootComponent.getPhysicalProperties(
-                    adsk.fusion.CalculationAccuracy.LowCalculationAccuracy
-                )
+                
+                massCalculation = FullMassCalculuation()
+                massCalculation.bRepMassInRoot()
+                massCalculation.traverseOccurrenceHierarchy()
+                
+                totalMass = massCalculation.getTotalMass()
                 value = float
 
                 self.allWeights[0] = round(
-                    physical.mass * 2.2046226218, 2
+                    totalMass * 2.2046226218, 2
                 )
 
                 self.allWeights[1] = round(
-                    physical.mass, 2
+                    totalMass, 2
                 )
 
                 if isLbs:
@@ -1550,9 +1626,10 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                 )
                 return value
         except:
-            logging.getLogger("{INTERNAL_ID}.UI.ConfigCommand.{self.__class__.__name__}.weight()").error(
-            "Failed:\n{}".format(traceback.format_exc())
-        )
+            gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
+            #logging.getLogger("{INTERNAL_ID}.UI.ConfigCommand.{self.__class__.__name__}.weight()").error(
+            #"Failed:\n{}".format(traceback.format_exc())
+        #)
 
     def notify(self, args):
         try:
@@ -1579,7 +1656,7 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                 if modeDropdown.selectedItem.index == 0:
                     if gamepieceConfig:
                         gm.ui.activeSelections.clear()
-                        gm.app.activeDocument.design.rootComponent.opacity = 1
+                        ROOT_COMP.opacity = 1
 
                         gamepieceConfig.isVisible = False
                         weightTableInput.isVisible = True
@@ -1591,7 +1668,7 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                 elif modeDropdown.selectedItem.index == 1:
                     if gamepieceConfig:
                         gm.ui.activeSelections.clear()
-                        gm.app.activeDocument.design.rootComponent.opacity = 1
+                        ROOT_COMP.opacity = 1
 
                         addWheelInput.isEnabled = \
                         addJointInput.isEnabled = \
@@ -1602,7 +1679,7 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                         weightTableInput.isVisible = False
 
             elif cmdInput.id == "joint_config":
-                gm.app.activeDocument.design.rootComponent.opacity = 1
+                ROOT_COMP.opacity = 1
 
             elif (cmdInput.id == "placeholder_w"
                 or cmdInput.id == "name_w"
@@ -2115,7 +2192,7 @@ def addGamepieceToTable(gamepiece: adsk.fusion.Occurrence) -> None:
             "name_gp", "Occurrence name", gamepiece.name, 1, True
         )
 
-        physical = gamepiece.component.getPhysicalProperties(
+        physical = gamepiece.getPhysicalProperties(
                 adsk.fusion.CalculationAccuracy.LowCalculationAccuracy
         )
 
