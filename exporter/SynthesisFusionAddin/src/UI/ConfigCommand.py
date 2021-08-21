@@ -1345,13 +1345,15 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
         
     def updateJointTable(self, jointGUID):
         try:
-            #gm.ui.messageBox(jointGUID)
+            if type(jointGUID) != str:
+                return
+                
             jointObject = gm.app.activeDocument.design.findEntityByToken(jointGUID)
 
             index = JointListGlobal.index(jointObject[0])
             textBox = jointTableInput.getInputAtPosition(index+1, 1)
 
-            textBox.formattedText += " [<b><i>wheel</i></b>]"
+            textBox.formattedText += "<b>{}</b>".format(" [wheel]")
         except:
             logging.getLogger("{INTERNAL_ID}.UI.ConfigCommand.{self.__class__.__name__}").error(
             "Failed:\n{}".format(traceback.format_exc())
@@ -1376,7 +1378,7 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
                     wheelJoint = returned[0]  # joint GUID
                     wheelParent = returned[1]
 
-                    #self.updateJointTable(wheelJoint)
+                    self.updateJointTable(wheelJoint)
                     self.wheel_joints.append(wheelJoint)
 
                     occurrenceList = (
@@ -1504,52 +1506,7 @@ class MyPreselectEndHandler(adsk.core.SelectionEventHandler):
 
 class FullMassCalculuation():
     def __init__(self):
-        self.progressDialog = gm.app.userInterface.createProgressDialog()
-
         self.totalMass = 0.0
-        self.currentBRepCount = 0
-        self.bRepBodyCount = ROOT_COMP.bRepBodies.count
-
-        self.currentOccCount = 0
-        self.occurrenceCount = ROOT_COMP.allOccurrences.count
-        self.currentValue = 0
-
-        self.totalIterations = self.bRepBodyCount + self.occurrenceCount + 1
-
-        self.progressDialog.title = "Calculating Assembly Mass"
-        self.progressDialog.minimumValue = 0
-        self.progressDialog.maximumValue = self.totalIterations
-        self.progressDialog.show(
-                "Mass Calculation", "Currently on %v of %m", 0, self.totalIterations
-            )
-
-    def _format(self):
-        out = f"Mass: \t {round(self.totalMass, 2)} \n"
-        out += f"\t BRepBodies: \t[ {self.currentBRepCount} / {self.bRepBodyCount}]\n"
-        out += f"\t Occurrences: \t[ {self.currentOccCount} / {self.occurrenceCount} ]\n"
-        out += f"{self.currentMessage}"
-
-        return out
-
-    def addBRep(self, name=None):
-        self.currentValue += 1
-        self.currentBRepCount += 1
-        self.currentMessage = f"BRepBody {name}"
-        self.update()
-
-    def addOccurrence(self, name=None):
-        self.currentValue += 1
-        self.currentOccCount += 1
-        self.currentMessage = f"Occurrence {name}"
-        self.update()
-
-    def update(self):
-        self.progressDialog.message = self._format()
-        self.progressDialog.progressValue = self.currentValue
-        self.value = self.currentValue
-
-    def wasCancelled(self) -> bool:
-        return self.progressDialog.wasCancelled
 
     def bRepMassInRoot(self):
         for body in ROOT_COMP.bRepBodies:
@@ -1557,18 +1514,15 @@ class FullMassCalculuation():
                 adsk.fusion.CalculationAccuracy.LowCalculationAccuracy
             )
             self.totalMass += physical.mass
-            self.addBRep(body.name)
 
     def traverseOccurrenceHierarchy(self):
         for occ in ROOT_COMP.allOccurrences:
-            comp = occ.component
 
-            for body in comp.bRepBodies:
+            for body in occ.component.bRepBodies:
                 physical = body.getPhysicalProperties(
                     adsk.fusion.CalculationAccuracy.LowCalculationAccuracy
                 )
                 self.totalMass += physical.mass
-            self.addOccurrence(occ.name)
 
     def getTotalMass(self):
         return self.totalMass
@@ -2207,22 +2161,25 @@ def addGamepieceToTable(gamepiece: adsk.fusion.Occurrence) -> None:
             "name_gp", "Occurrence name", gamepiece.name, 1, True
         )
 
-        physical = gamepiece.getPhysicalProperties(
-                adsk.fusion.CalculationAccuracy.LowCalculationAccuracy
+        value = 0.0
+        physical = gamepiece.component.getPhysicalProperties(
+            adsk.fusion.CalculationAccuracy.LowCalculationAccuracy
         )
+        value = physical.mass
 
         # check if dropdown unit is kg or lbs. bool value taken from ConfigureCommandInputChanged
         massUnitInString = ""
         if onInputChanged.isLbs_f:
             value = round(
-                physical.mass * 2.2046226218, 2 # lbs
+                value * 2.2046226218, 2 # lbs
             )
             massUnitInString = "<i>(in pounds)</i>"
         else:
             value = round(
-                physical.mass, 2 # kg
+                value, 2 # kg
             )
             massUnitInString = "<i>(in kilograms)</i>"
+
         weight = cmdInputs.addValueInput(
             "weight_gp", "Weight Input", "", adsk.core.ValueInput.createByString(str(value))
         )
