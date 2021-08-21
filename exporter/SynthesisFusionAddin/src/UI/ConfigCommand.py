@@ -1343,6 +1343,20 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
             #gm.ui.messageBox("Selection's component has no referenced joints.\nReturning selection.\n\n" + "Occurrence:\n--> " + occ.name + "\nJoint:\n--> NONE")
             return [None, occ]
         
+    def updateJointTable(self, jointGUID):
+        try:
+            #gm.ui.messageBox(jointGUID)
+            jointObject = gm.app.activeDocument.design.findEntityByToken(jointGUID)
+
+            index = JointListGlobal.index(jointObject[0])
+            textBox = jointTableInput.getInputAtPosition(index+1, 1)
+
+            textBox.formattedText += " [<b><i>wheel</i></b>]"
+        except:
+            logging.getLogger("{INTERNAL_ID}.UI.ConfigCommand.{self.__class__.__name__}").error(
+            "Failed:\n{}".format(traceback.format_exc())
+        )
+    
     def notify(self, args):
         """### Notify member is called when a selection event is triggered.
 
@@ -1359,8 +1373,11 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
                 if dropdownExportMode.selectedItem.name == "Robot":
                     returned = self.wheelParent(self.selectedOcc)
                     
-                    self.wheel_joints.append(returned[0])
+                    wheelJoint = returned[0]  # joint GUID
                     wheelParent = returned[1]
+
+                    #self.updateJointTable(wheelJoint)
+                    self.wheel_joints.append(wheelJoint)
 
                     occurrenceList = (
                         ROOT_COMP.allOccurrencesByComponent(
@@ -1404,11 +1421,9 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
                     else:
                         removeJointFromTable(self.selectedJoint)
         except:
-            if gm.ui:
-                gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
-            #logging.getLogger("{INTERNAL_ID}.UI.ConfigCommand.{self.__class__.__name__}").error(
-            #"Failed:\n{}".format(traceback.format_exc())
-            #)
+            logging.getLogger("{INTERNAL_ID}.UI.ConfigCommand.{self.__class__.__name__}").error(
+            "Failed:\n{}".format(traceback.format_exc())
+        )
 
 
 class MyPreSelectHandler(adsk.core.SelectionEventHandler):
