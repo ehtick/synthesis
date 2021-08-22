@@ -67,6 +67,7 @@ ROOT_COMP = gm.app.activeDocument.design.rootComponent
 WheelListGlobal = []
 JointListGlobal = []
 GamepieceListGlobal = []
+WheelJointListGlobal = []
 
 resources = OsHelper.getOSPath(".", "src", "Resources")
 
@@ -86,6 +87,13 @@ iconPaths = {
     "ball": resources + os.path.join("JointIcons", "JointBall", "ball190x24.png"),
     "blank": resources + "blank-preview16x16.png",
 }
+
+def GUID(arg):
+    if type(arg) == str:
+        object = gm.app.activeDocument.design.findEntityByToken(arg)[0]
+        return object
+    else:
+        return arg.entityToken
 
 
 class JointMotions(Enum):
@@ -383,7 +391,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             jointConfig = inputs.addGroupCommandInput(
                 "joint_config", "Joint Configuration"
             )
-            jointConfig.isExpanded = False
+            jointConfig.isExpanded = True
             jointConfig.isVisible = True
             jointConfig.tooltip = "Select and define joint occurrences in your assembly."
 
@@ -1246,8 +1254,6 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
         self.selectedOcc = None # selected occurrence (if there is one)
         self.selectedJoint = None # selected joint (if there is one)
 
-        self.wheel_joints = []
-
     def traverseAssembly(self, child_occurrences: adsk.fusion.OccurrenceList, jointedOcc: dict): # recursive traversal to check if children are jointed
         """### Traverses the entire occurrence hierarchy to find a match (jointed occurrence) in self.occurrence
 
@@ -1342,22 +1348,6 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
         )
             #gm.ui.messageBox("Selection's component has no referenced joints.\nReturning selection.\n\n" + "Occurrence:\n--> " + occ.name + "\nJoint:\n--> NONE")
             return [None, occ]
-        
-    def updateJointTable(self, jointGUID):
-        try:
-            if type(jointGUID) != str:
-                return
-                
-            jointObject = gm.app.activeDocument.design.findEntityByToken(jointGUID)
-
-            index = JointListGlobal.index(jointObject[0])
-            textBox = jointTableInput.getInputAtPosition(index+1, 1)
-
-            textBox.formattedText += "<b>{}</b>".format(" [wheel]")
-        except:
-            logging.getLogger("{INTERNAL_ID}.UI.ConfigCommand.{self.__class__.__name__}").error(
-            "Failed:\n{}".format(traceback.format_exc())
-        )
     
     def notify(self, args):
         """### Notify member is called when a selection event is triggered.
@@ -1366,6 +1356,7 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
             args (SelectionEventArgs): A selection event argument
         """
         try:
+            global WheelJointListGlobal
             eventArgs = adsk.core.SelectionEventArgs.cast(args)
 
             self.selectedOcc = adsk.fusion.Occurrence.cast(args.selection.entity)
@@ -1375,11 +1366,7 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
                 if dropdownExportMode.selectedItem.name == "Robot":
                     returned = self.wheelParent(self.selectedOcc)
                     
-                    wheelJoint = returned[0]  # joint GUID
                     wheelParent = returned[1]
-
-                    self.updateJointTable(wheelJoint)
-                    self.wheel_joints.append(wheelJoint)
 
                     occurrenceList = (
                         ROOT_COMP.allOccurrencesByComponent(
@@ -1390,14 +1377,22 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
                     if duplicateSelection.value:
                         for occ in occurrenceList:
                             if occ not in WheelListGlobal:
+                                #updateJointTable(returned)
                                 addWheelToTable(occ)
+                                #WheelJointListGlobal.append(returned)
                             else:
+                                #updateJointTable(returned)
                                 removeWheelFromTable(WheelListGlobal.index(occ))
+                                #WheelJointListGlobal.remove(returned)
                     else:
                         if wheelParent not in WheelListGlobal:
+                            #updateJointTable(returned)
                             addWheelToTable(wheelParent)
+                            #WheelJointListGlobal.append(returned)
                         else:
+                            #updateJointTable(returned)
                             removeWheelFromTable(WheelListGlobal.index(wheelParent))
+                            #WheelJointListGlobal.remove(returned)
 
                 elif dropdownExportMode.selectedItem.name == "Field":
                     occurrenceList = (
@@ -1956,6 +1951,7 @@ class MyCommandDestroyHandler(adsk.core.CommandEventHandler):
             WheelListGlobal.clear()
             JointListGlobal.clear()
             GamepieceListGlobal.clear()
+            WheelJointListGlobal.clear()
 
             gm.ui.activeSelections.clear()
         except:
@@ -1963,6 +1959,67 @@ class MyCommandDestroyHandler(adsk.core.CommandEventHandler):
             "Failed:\n{}".format(traceback.format_exc())
         )
 
+def updateJointTable(args):
+    global WheelJointListGlobal
+
+    try:
+        textBox = None
+        jointObject = None
+
+        def _normal():
+            textBox.formattedText = "<p style='font-size:11px'>{}</p>".format(jointObject.name)
+
+        def _format():
+            textBox.formattedText = \
+                """
+                    <body style='background-color:{};'>
+                        <span style='font-size:11px;'>
+                            {}
+                        </span>
+
+                        <span style='font-size:8px;'>
+                            <b>
+                                <i>
+                                    {}
+                                </i>
+                            </b>
+                        </span>
+                    </body>
+                """.format("#d9ead3", jointObject.name, " [wheel]")
+
+        if type(args) == list: # if a selection is made
+            if args in WheelJointListGlobal:
+                jointObject = gm.app.activeDocument.design.findEntityByToken(args[0])[0]
+                
+                index = JointListGlobal.index(jointObject)
+                textBox = jointTableInput.getInputAtPosition(index+1, 1)
+                _normal()
+
+            else:
+                jointObject = gm.app.activeDocument.design.findEntityByToken(args[0])[0]
+                
+                index = JointListGlobal.index(jointObject)
+                textBox = jointTableInput.getInputAtPosition(index+1, 1)
+                _format()
+
+        elif type(args) == adsk.fusion.Occurrence:
+            for i in WheelJointListGlobal:
+                if args in i:
+                    index1 = WheelJointListGlobal.index(i)
+                    jointObject = gm.app.activeDocument.design.findEntityByToken(i[0])[0]
+
+                    index2 = JointListGlobal.index(jointObject)
+                    textBox = jointTableInput.getInputAtPosition(index2+1, 1)
+                    _normal()
+
+                    del WheelJointListGlobal[index1]
+
+    except:
+        if gm.ui:
+            gm.ui.messageBox("Failed:\n{}".format(traceback.format_exc()))
+    #    logging.getLogger("{INTERNAL_ID}.UI.ConfigCommand.{self.__class__.__name__}").error(
+    #    "Failed:\n{}".format(traceback.format_exc())
+    #)
 
 def addJointToTable(joint: adsk.fusion.Joint) -> None:
     """### Adds a Joint object to its global list and joint table.
@@ -2020,9 +2077,10 @@ def addJointToTable(joint: adsk.fusion.Joint) -> None:
 
         # joint name
         name = cmdInputs.addTextBoxCommandInput(
-            "name_j", "Occurrence name", joint.name, 1, True
+            "name_j", "Occurrence name", "", 1, True
         )
         name.tooltip = joint.name
+        name.formattedText = "<p style='font-size:11px'>{}</p>".format(joint.name)
 
         jointType = cmdInputs.addDropDownCommandInput(
             "joint_parent",
@@ -2236,6 +2294,8 @@ def removeWheelFromTable(index: int) -> None:
 
         del WheelListGlobal[index]
         wheelTableInput.deleteRow(index + 1)
+
+        updateJointTable(wheel)
     except IndexError:
         pass
     except:
