@@ -1,6 +1,5 @@
 import adsk.fusion, adsk.core, traceback, logging
 from ..general_imports import *
-from ConfigCommand import ROOT_COMP
 
 def createTextGraphics(wheel: adsk.fusion.Occurrence, _wheels) -> None:
     try:
@@ -12,7 +11,7 @@ def createTextGraphics(wheel: adsk.fusion.Occurrence, _wheels) -> None:
         max = boundingBox.maxPoint.asArray() # [x, y, z] max coords
 
         if design:
-            graphics = ROOT_COMP.customGraphicsGroups.add()
+            graphics = gm.app.activeDocument.design.rootComponent.customGraphicsGroups.add()
             matrix = adsk.core.Matrix3D.create()
             matrix.translation = adsk.core.Vector3D.create(min[0], min[1]-5, min[2])
 
@@ -64,20 +63,6 @@ def createTextGraphics(wheel: adsk.fusion.Occurrence, _wheels) -> None:
             "Failed:\n{}".format(traceback.format_exc())
         )
 
-<<<<<<< HEAD
-
-def highlightJointedOccurrences(joint: adsk.fusion.Joint) -> None:
-    occurrenceOne = joint.occurrenceOne
-    occurrenceTwo = joint.occurrenceTwo
-
-    try:
-        design = adsk.fusion.Design.cast(gm.app.activeProduct)
-
-        if design:
-            graphics = ROOT_COMP.customGraphicsGroups.add()
-
-            for bRepBody in occurrenceOne.bRepBodies:
-=======
 def highlightJointedOccurrences(joint: adsk.fusion.Joint) -> None:
     try:
         design = adsk.fusion.Design.cast(gm.app.activeProduct)
@@ -89,22 +74,10 @@ def highlightJointedOccurrences(joint: adsk.fusion.Joint) -> None:
         if design:
             for bRepBody in occOne.bRepBodies:
                 graphics = root.customGraphicsGroups.add()
->>>>>>> 3993e01f92803add4941f08e18533e30f6f42002
                 bodyMesh = bRepBody.meshManager.displayMeshes.bestMesh
 
                 coords = adsk.fusion.CustomGraphicsCoordinates.create(bodyMesh.nodeCoordinatesAsDouble)
                 mesh = graphics.addMesh(
-<<<<<<< HEAD
-                        coords,
-                        bodyMesh.nodeIndices, 
-                        bodyMesh.normalVectorsAsDouble,
-                        bodyMesh.nodeIndices
-                    )
-                mesh.color = adsk.fusion.CustomGraphicsShowThroughColorEffect.create(adsk.core.Color(0, 47, 76, 255), 0.8)
-
-            
-            for bRepBody in occurrenceTwo.bRepBodies:
-=======
                     coords, 
                     bodyMesh.nodeIndices, 
                     bodyMesh.normalVectorsAsDouble, 
@@ -115,21 +88,10 @@ def highlightJointedOccurrences(joint: adsk.fusion.Joint) -> None:
 
             for bRepBody in occTwo.bRepBodies:
                 graphics = root.customGraphicsGroups.add()
->>>>>>> 3993e01f92803add4941f08e18533e30f6f42002
                 bodyMesh = bRepBody.meshManager.displayMeshes.bestMesh
 
                 coords = adsk.fusion.CustomGraphicsCoordinates.create(bodyMesh.nodeCoordinatesAsDouble)
                 mesh = graphics.addMesh(
-<<<<<<< HEAD
-                        coords,
-                        bodyMesh.nodeIndices, 
-                        bodyMesh.normalVectorsAsDouble,
-                        bodyMesh.nodeIndices
-                    )
-                mesh.color = adsk.fusion.CustomGraphicsShowThroughColorEffect.create(adsk.core.Color(235, 0, 0, 255), 0.8)
-
-            gm.app.activeViewport.refresh()
-=======
                     coords, 
                     bodyMesh.nodeIndices, 
                     bodyMesh.normalVectorsAsDouble, 
@@ -137,7 +99,6 @@ def highlightJointedOccurrences(joint: adsk.fusion.Joint) -> None:
                 )
                 showThrough = adsk.fusion.CustomGraphicsShowThroughColorEffect.create(adsk.core.Color.create(235, 0, 0, 255), 0.8)
                 mesh.color = showThrough
->>>>>>> 3993e01f92803add4941f08e18533e30f6f42002
     except:
         if gm.ui:
             gm.ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))

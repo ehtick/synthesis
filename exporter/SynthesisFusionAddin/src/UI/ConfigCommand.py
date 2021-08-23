@@ -55,7 +55,7 @@ duplicateSelection = None
 dropdownExportMode = None
 weightUnit = None
 
-ROOT_COMP = gm.app.activeDocument.design.rootComponent
+ROOT_COMP = gm.app.activeDocument.design.rootComponent # remove this
 
 """
     - These lists are very crucial.
@@ -293,7 +293,6 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             )
 
             wheel_inputs = wheelConfig.children
-
             
             # WHEEL SELECTION TABLE
             """
@@ -377,8 +376,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 checked=True,
                 tooltip="Select duplicate wheel components.",
                 tooltipadvanced="""<hr>When this is checked, all duplicate occurrences will be automatically selected.
-                <br>This feature may fail when duplicates are not direct copies.</br>
-                """, # advanced tooltip
+                <br>This feature may fail when duplicates are not direct copies.</br>""", # advanced tooltip
                 enabled=True,
             )
 
@@ -586,9 +584,9 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             gamepieceTableInput.addCommandInput(
                 self.createTextBoxInput(
                     "e_header",
-                    "Gamepiece weight",
+                    "Gamepiece name",
                     gamepiece_inputs,
-                    "Element",
+                    "Gamepiece",
                     bold=False,
                 ),
                 0,
@@ -791,12 +789,13 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
 
             global algorithmicSelection
             algorithmicSelection = self.createBooleanInput(
-                "predictive_wheel_selection",
-                "Algorithmic Selection",
+                "algorithmic_selection",
+                "Algorithmic Wheel Selection",
                 exporter_settings,
                 checked=True,
                 tooltip="Automatically select the entire wheel component.",
-                tooltipadvanced="""<hr>If a sub-part of a wheel is selected (eg. a roller of an omni wheel), an algorithm will traverse the assembly to best determine the entire wheel component.</br>
+                tooltipadvanced=
+"""<hr>If a sub-part of a wheel is selected (eg. a roller of an omni wheel), an algorithm will traverse the assembly to best determine the entire wheel component.</br>
 <br>This traversal operates on how the wheel is jointed and where the joint is placed. If the automatic selection fails, try:
 <pre> 1. Jointing the wheel differently, or 
  2. Selecting it manually from the browser
@@ -1309,6 +1308,8 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
         self.selectedOcc = None # selected occurrence (if there is one)
         self.selectedJoint = None # selected joint (if there is one)
 
+        self.algorithmicSelection = True
+
     def traverseAssembly(self, child_occurrences: adsk.fusion.OccurrenceList, jointedOcc: dict): # recursive traversal to check if children are jointed
         """### Traverses the entire occurrence hierarchy to find a match (jointed occurrence) in self.occurrence
 
@@ -1421,12 +1422,10 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
                 if dropdownExportMode.selectedItem.name == "Robot":
                     wheelParent = None
 
-                    if onKeyDown.algorithmicSelection:
-                        gm.ui.messageBox("ALGORITHMIC SELECTION")
+                    if self.algorithmicSelection:
                         returned = self.wheelParent(self.selectedOcc)
                         wheelParent = returned[1]
                     else:
-                        gm.ui.messageBox("MANUAL SELECTION")
                         wheelParent = self.selectedOcc
                     
                     occurrenceList = (
@@ -1573,7 +1572,6 @@ class FullMassCalculuation():
 
     def traverseOccurrenceHierarchy(self):
         for occ in ROOT_COMP.allOccurrences:
-
             for body in occ.component.bRepBodies:
                 physical = body.getPhysicalProperties(
                     adsk.fusion.CalculationAccuracy.LowCalculationAccuracy
@@ -1992,6 +1990,10 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                                 physical.mass, 2
                             )
                             weightInput.value = value
+
+            elif cmdInput.id == "algorithmic_selection":
+                checkBox = adsk.core.BoolValueCommandInput.cast(cmdInput)
+                onSelect.algorithmicSelection = checkBox.value
         except:
             logging.getLogger("{INTERNAL_ID}.UI.ConfigCommand.{self.__class__.__name__}").error(
             "Failed:\n{}".format(traceback.format_exc())
@@ -2001,14 +2003,15 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
 class MyKeyDownHandler(adsk.core.KeyboardEventHandler):
     def __init__(self) -> None:
         super().__init__()
-        self.algorithmicSelection = True
     def notify(self, args):
         eventArgs = adsk.core.KeyboardEventArgs.cast(args)
         keyCode = eventArgs.keyCode
         
-        if keyCode == 16777248:
-            self.algorithmicSelection = \
-            algorithmicSelection.value = False
+        if keyCode == 16777248: # SHIFT key pressed
+            if algorithmicSelection.value:
+                onSelect.algorithmicSelection = False
+            else:
+                onSelect.algorithmicSelection = True
 
 
 class MyKeyUpHandler(adsk.core.KeyboardEventHandler):
@@ -2016,9 +2019,10 @@ class MyKeyUpHandler(adsk.core.KeyboardEventHandler):
         super().__init__()
     def notify(self, args):
         eventArgs = adsk.core.KeyboardEventArgs.cast(args)
+        keyCode = eventArgs.keyCode
 
-        onKeyDown.algorithmicSelection = \
-        algorithmicSelection.value = True
+        if keyCode == 16777248: # SHIFT key released
+            onSelect.algorithmicSelection = algorithmicSelection.value
 
 
 class MyCommandDestroyHandler(adsk.core.CommandEventHandler):
