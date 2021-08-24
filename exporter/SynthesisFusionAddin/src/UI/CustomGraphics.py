@@ -3,7 +3,7 @@ from ..general_imports import *
 
 def createTextGraphics(wheel: adsk.fusion.Occurrence, _wheels) -> None:
     try:
-        design = adsk.fusion.Design.cast(gm.app.activeProduct)
+        design = gm.app.activeDocument.design
 
         boundingBox = wheel.boundingBox # occurrence bounding box
         
@@ -62,43 +62,3 @@ def createTextGraphics(wheel: adsk.fusion.Occurrence, _wheels) -> None:
         logging.getLogger("{INTERNAL_ID}.UI.CreateTextGraphics").error(
             "Failed:\n{}".format(traceback.format_exc())
         )
-
-def highlightJointedOccurrences(joint: adsk.fusion.Joint) -> None:
-    try:
-        design = adsk.fusion.Design.cast(gm.app.activeProduct)
-        root = design.rootComponent
-
-        occOne = joint.occurrenceOne
-        occTwo = joint.occurrenceTwo
-
-        if design:
-            for bRepBody in occOne.bRepBodies:
-                graphics = root.customGraphicsGroups.add()
-                bodyMesh = bRepBody.meshManager.displayMeshes.bestMesh
-
-                coords = adsk.fusion.CustomGraphicsCoordinates.create(bodyMesh.nodeCoordinatesAsDouble)
-                mesh = graphics.addMesh(
-                    coords, 
-                    bodyMesh.nodeIndices, 
-                    bodyMesh.normalVectorsAsDouble, 
-                    bodyMesh.nodeIndices
-                )
-                showThrough = adsk.fusion.CustomGraphicsShowThroughColorEffect.create(adsk.core.Color.create(0, 47, 76, 255), 0.8)
-                mesh.color = showThrough
-
-            for bRepBody in occTwo.bRepBodies:
-                graphics = root.customGraphicsGroups.add()
-                bodyMesh = bRepBody.meshManager.displayMeshes.bestMesh
-
-                coords = adsk.fusion.CustomGraphicsCoordinates.create(bodyMesh.nodeCoordinatesAsDouble)
-                mesh = graphics.addMesh(
-                    coords, 
-                    bodyMesh.nodeIndices, 
-                    bodyMesh.normalVectorsAsDouble, 
-                    bodyMesh.nodeIndices
-                )
-                showThrough = adsk.fusion.CustomGraphicsShowThroughColorEffect.create(adsk.core.Color.create(235, 0, 0, 255), 0.8)
-                mesh.color = showThrough
-    except:
-        if gm.ui:
-            gm.ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
