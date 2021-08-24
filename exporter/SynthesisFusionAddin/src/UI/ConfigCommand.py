@@ -36,9 +36,9 @@ CONFIG_COMMAND:
 """
 inputs_root:
     (adsk.fusion.CommandInputs)
-    - Provides access to the set of commandInput UI elements in the panel
+    - Provides access to the set of all commandInput UI elements in the panel
 """
-inputs_root = None # CommandInputs object that is the parent to all command inputs of UI
+inputs_root = None
 
 """
 - These lists are very crucial, and house all of the relevent object selections.
@@ -52,7 +52,7 @@ JointListGlobal = []
 GamepieceListGlobal = []
 
 """
-Dictionary to store all icon path names in this file. All path strings are OS-dependent
+Dictionary to store all icon path names in this file. All path strings are OS-independent
 """
 resources = OsHelper.getOSPath(".", "src", "Resources") # str shortcut with primary directories to all images in file
 iconPaths = {
@@ -70,13 +70,13 @@ iconPaths = {
 }
 
 def GUID(arg):
-    """Will return command object when given a string GUID, or the string GUID of an object (depending on arg value)
+    """### Will return command object when given a string GUID, or the string GUID of an object (depending on arg value)
 
     Args:
-        arg str | object: Either a command input object or command input GUID
+        arg str || object: Either a command input object or command input GUID
 
     Returns:
-        str | object: Either a command input object or command input GUID
+        str || object: Either a command input object or command input GUID
     """
     if type(arg) == str:
         object = gm.app.activeDocument.design.findEntityByToken(arg)[0]
@@ -85,17 +85,32 @@ def GUID(arg):
         return arg.entityToken
 
 def wheelTable():
+    """### Returns the wheel table command input
+
+    Returns:
+        adsk.fusion.TableCommandInput
+    """
     return inputs_root.itemById("wheel_table")
 
 def jointTable():
+    """### Returns the joint table command input
+
+    Returns:
+        adsk.fusion.TableCommandInput
+    """
     return inputs_root.itemById("joint_table")
 
 def gamepieceTable():
+    """### Returns the gamepiece table command input
+
+    Returns:
+        adsk.fusion.TableCommandInput
+    """
     return inputs_root.itemById("gamepiece_table")
 
 
 class JointMotions(Enum):
-    """### Enum with joint motions and integer associations
+    """### Corresponds to the API JointMotions enum 
 
     Args:
         Enum (enum.Enum)
@@ -108,6 +123,7 @@ class JointMotions(Enum):
     PLANAR = 5
     BALL = 6
 
+
 class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
     """### Start the Command Input Object and define all of the input groups to create our ParserOptions object.
 
@@ -115,17 +131,12 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
         - linked and called from (@ref HButton) and linked
         - will be called from (@ref Events.py)
     """
-
     def __init__(self, configure):
         super().__init__()
         self.log = logging.getLogger(f"{INTERNAL_ID}.UI.{self.__class__.__name__}")
 
     def notify(self, args):
         try:
-
-            app = adsk.core.Application.get()
-            design = app.activeDocument.design
-
             if not Helper.check_solid_open():
                 return
 
@@ -165,7 +176,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             cmd.isExecutedWhenPreEmpted = False
             cmd.okButtonText = "Export" # replace default OK text with "export"
 
-            global inputs_root # keep this global
+            global inputs_root # Global CommandInputs arg
             inputs_root = cmd.commandInputs
 
             # ====================================== GENERAL TAB ======================================
@@ -242,7 +253,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 adsk.core.ValueInput.createByString("0.0"),
             )
             weight_input.tooltip = "Robot weight"
-            weight_input.tooltipDescription = """<i>(in pounds)</i><hr>This is the weight of the entire robot assembly."""
+            weight_input.tooltipDescription = """<tt>(in pounds)</tt><hr>This is the weight of the entire robot assembly."""
 
             weight_unit = inputs.addDropDownCommandInput(
                 "weight_unit",
@@ -350,7 +361,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             Select duplicates?
                 - creates a BoolValueCommandInput
             """
-            duplicateSelection = self.createBooleanInput( # create bool value command input using helper
+            self.createBooleanInput( # create bool value command input using helper
                 "duplicate_selection",
                 "Select Duplicates",
                 wheel_inputs,
@@ -558,6 +569,9 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             gamepieceTableInput.addToolbarCommandInput(addFieldInput)
             gamepieceTableInput.addToolbarCommandInput(removeFieldInput)
 
+            """
+            Gamepiece table column headers. (the permanent captions in the first row of table)
+            """
             gamepieceTableInput.addCommandInput(
                 self.createTextBoxInput(
                     "e_header",
@@ -615,22 +629,28 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             )
             exporterSetings.isExpanded = True
             exporterSetings.isEnabled = True
-            exporterSetings.tooltip = "tooltip"
+            exporterSetings.tooltip = "tooltip" # TODO: update tooltip
             exporter_settings = exporterSetings.children
 
-            self.createBooleanInput(
+            self.createBooleanInput( # algorithm wheel selection checkbox.
                 "algorithmic_selection",
                 "Algorithmic Wheel Selection",
                 exporter_settings,
                 checked=True,
                 tooltip="Automatically select the entire wheel component.",
-                tooltipadvanced=
-"""<hr>If a sub-part of a wheel is selected (eg. a roller of an omni wheel), an algorithm will traverse the assembly to best determine the entire wheel component.</br>
-<br>This traversal operates on how the wheel is jointed and where the joint is placed. If the automatic selection fails, try:<ul><tt><li>Jointing the wheel differently, or</li><br><li>Selecting the wheel from the browser while holding down <span style='text-decoration:overline;background-color: #c27b10'>&nbsp;SHIFT&nbsp;</span></span>, or</li><br><li>Disabling Algorithmic Selection.</li></tt></ul>""",
+                tooltipadvanced="<hr>If a sub-part of a wheel is selected (eg. a roller of an omni wheel), an algorithm will traverse the assembly to best determine the entire wheel component.<br>" + 
+                                "<br>This traversal operates on how the wheel is jointed and where the joint is placed. If the automatic selection fails, try:" + 
+                                "<ul>" +
+                                    "<tt>" + 
+                                        "<li>Jointing the wheel differently, or</li><br>" + 
+                                        "<li>Selecting the wheel from the browser while holding down <span style='text-decoration:overline;text-decoration:underline;background-color: #c27b10'>&nbsp;SHIFT&nbsp;</span></span>, or</li><br>" + 
+                                        "<li>Disabling Algorithmic Selection.</li>" + 
+                                    "</tt>" + 
+                                "</ul>",
                 enabled=True,
             )
 
-            self.createBooleanInput(
+            self.createBooleanInput( # open synthesis checkbox
                 "open_synthesis",
                 "Open Synthesis",
                 exporter_settings,
@@ -650,33 +670,33 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
 
             physicsSettings.isExpanded = False
             physicsSettings.isEnabled = True
-            physicsSettings.tooltip = "tooltip"
+            physicsSettings.tooltip = "tooltip" # TODO: update tooltip
             physics_settings = physicsSettings.children
 
-            self.createBooleanInput(
+            self.createBooleanInput( # density checkbox
                 "density",
                 "Density",
                 physics_settings,
                 checked=True,
-                tooltip="tooltip",
+                tooltip="tooltip", # TODO: update tooltip
                 enabled=True,
             )
 
-            self.createBooleanInput(
+            self.createBooleanInput( # SA checkbox
                 "surface_area",
                 "Surface Area",
                 physics_settings,
                 checked=True,
-                tooltip="tooltip",
+                tooltip="tooltip", # TODO: update tooltip
                 enabled=True,
             )
 
-            self.createBooleanInput(
+            self.createBooleanInput( # restitution checkbox
                 "restitution",
                 "Restitution",
                 physics_settings,
                 checked=True,
-                tooltip="tooltip",
+                tooltip="tooltip", # TODO: update tooltip
                 enabled=True,
             )
 
@@ -731,7 +751,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             )
             jointsSettings.isExpanded = False
             jointsSettings.isEnabled = True
-            jointsSettings.tooltip = "tooltip"
+            jointsSettings.tooltip = "tooltip" # TODO: update tooltip
             joints_settings = jointsSettings.children
 
             self.createBooleanInput(
@@ -739,7 +759,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 "Kinematic Only",
                 joints_settings,
                 checked=False,
-                tooltip="tooltip",
+                tooltip="tooltip", # TODO: update tooltip
                 enabled=True,
             )
 
@@ -748,7 +768,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 "Calculate Limits",
                 joints_settings,
                 checked=True,
-                tooltip="tooltip",
+                tooltip="tooltip", # TODO: update tooltip
                 enabled=True,
             )
 
@@ -757,7 +777,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 "Auto-Assign ID's",
                 joints_settings,
                 checked=True,
-                tooltip="tooltip",
+                tooltip="tooltip", # TODO: update tooltip
                 enabled=True,
             )
 
@@ -772,10 +792,10 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
 
             controllerSettings.isExpanded = False
             controllerSettings.isEnabled = True
-            controllerSettings.tooltip = "tooltip"
+            controllerSettings.tooltip = "tooltip" # TODO: update tooltip
             controller_settings = controllerSettings.children
 
-            self.createBooleanInput(
+            self.createBooleanInput( # export signals checkbox
                 "export_signals",
                 "Export Signals",
                 controller_settings,
@@ -830,8 +850,6 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             onDestroy = MyCommandDestroyHandler()
             cmd.destroy.add(onDestroy)
             gm.handlers.append(onDestroy) # 8
-
-            wheelTABLE = (lambda id: inputs_root.itemById(id))("wheel_table")
 
         except:
             logging.getLogger("{INTERNAL_ID}.UI.ConfigCommand.{self.__class__.__name__}").error(
@@ -1077,7 +1095,7 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
                             WheelListGlobal[row-1].entityToken,
                             wheelTypeIndex,
                             signalTypeIndex,
-                            onSelect.wheelJointList[row-1][0] # GUID of wheel joint. if no joint found, default to None
+                            #onSelect.wheelJointList[row-1][0] # GUID of wheel joint. if no joint found, default to None
                         )
                     )
 
@@ -1262,7 +1280,7 @@ class CommandExecutePreviewHandler(adsk.core.CommandEventHandler):
                 for group in gm.app.activeDocument.design.rootComponent.customGraphicsGroups:
                     group.deleteMe()
 
-            if not addJointInput.isEnabled or not removeJointInput:
+            if not addJointInput.isEnabled or not removeJointInput: # TODO: improve joint highlighting
                 #for joint in JointListGlobal:
                 #    CustomGraphics.highlightJointedOccurrences(joint)
 
@@ -1673,9 +1691,9 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
 
             weight_input = inputs_root.itemById("weight_input")
 
-            gamepieceConfig = inputs.itemById("gamepiece_config")
             wheelConfig = inputs.itemById("wheel_config")
             jointConfig = inputs.itemById("joint_config")
+            gamepieceConfig = inputs.itemById("gamepiece_config")
             
             addWheelInput = inputs_root.itemById("wheel_add")
             addJointInput = inputs_root.itemById("joint_add")
@@ -1926,15 +1944,15 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
 
             elif cmdInput.id == "weight_unit":
                 unitDropdown = adsk.core.DropDownCommandInput.cast(cmdInput)
-                weightInput = self.weightTableInput.getInputAtPosition(0, 2)
+                weightInput = weightTableInput.getInputAtPosition(0, 2)
                 if unitDropdown.selectedItem.index == 0:
                     self.isLbs = True
 
-                    weightInput.tooltipDescription = """<i>(in pounds)</i><hr>This is the weight of the entire robot assembly."""
+                    weightInput.tooltipDescription = """<tt>(in pounds)</tt><hr>This is the weight of the entire robot assembly."""
                 elif unitDropdown.selectedItem.index == 1:
                     self.isLbs = False
 
-                    weightInput.tooltipDescription = """<i>(in kilograms)</i><hr>This is the weight of the entire robot assembly."""
+                    weightInput.tooltipDescription = """<tt>(in kilograms)</tt><hr>This is the weight of the entire robot assembly."""
 
             elif cmdInput.id == "weight_unit_f":
                 unitDropdown = adsk.core.DropDownCommandInput.cast(cmdInput)
@@ -1945,7 +1963,7 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                         if row == 0:
                             continue
                         weightInput = gamepieceTableInput.getInputAtPosition(row, 2)
-                        weightInput.tooltipDescription = "<i>(in pounds)</i>"
+                        weightInput.tooltipDescription = "<tt>(in pounds)</tt>"
                 elif unitDropdown.selectedItem.index == 1:
                     self.isLbs_f = False
 
@@ -1953,7 +1971,7 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                         if row == 0:
                             continue
                         weightInput = gamepieceTableInput.getInputAtPosition(row, 2)
-                        weightInput.tooltipDescription = "<i>(in kilograms)</i>"
+                        weightInput.tooltipDescription = "<tt>(in kilograms)</tt>"
 
             elif cmdInput.id == "auto_calc_weight":
                 button = adsk.core.BoolValueCommandInput.cast(cmdInput)
@@ -2007,6 +2025,8 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                 checkBox = adsk.core.BoolValueCommandInput.cast(cmdInput)
                 onSelect.algorithmicSelection = checkBox.value
         except:
+            if gm.ui:
+                gm.ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
             logging.getLogger("{INTERNAL_ID}.UI.ConfigCommand.{self.__class__.__name__}").error(
             "Failed:\n{}".format(traceback.format_exc())
         )
@@ -2344,12 +2364,12 @@ def addGamepieceToTable(gamepiece: adsk.fusion.Occurrence) -> None:
             value = round(
                 value * 2.2046226218, 2 # lbs
             )
-            massUnitInString = "<i>(in pounds)</i>"
+            massUnitInString = "<tt>(in pounds)</tt>"
         else:
             value = round(
                 value, 2 # kg
             )
-            massUnitInString = "<i>(in kilograms)</i>"
+            massUnitInString = "<tt>(in kilograms)</tt>"
 
         weight = cmdInputs.addValueInput(
             "weight_gp", "Weight Input", "", adsk.core.ValueInput.createByString(str(value))
