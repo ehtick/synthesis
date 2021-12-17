@@ -23,7 +23,8 @@ namespace hel{
     std::recursive_mutex RobotInputsManager::receive_data_mutex;
 
     void __attribute__((constructor)) printVersionInfo() { // Print version info when library is loaded
-        std::ifstream vm_info;
+        printf("hello\n");
+	std::ifstream vm_info;
         vm_info.open(VIRTUAL_MACHINE_INFO_PATH);
 
         std::string vm_version;

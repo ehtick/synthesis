@@ -22,6 +22,8 @@ namespace hel{
 
         void reset(tRioStatusCode*);
 
+	const char* getFPGAFileName();
+
         void getDmaDescriptor(int, tDMAChannelDescriptor*);
     };
     /**

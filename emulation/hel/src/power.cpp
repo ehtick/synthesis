@@ -29,6 +29,15 @@ namespace hel{
         disabled = d;
     }
 
+    uint8_t Power::readBrownoutVoltage250mV()noexcept {
+	return brownout_voltage_250mv;
+    }
+
+    void Power::writeBrownoutVoltage250mV(unsigned char v) noexcept {
+        brownout_voltage_250mv = v;
+    }
+
+
     Power::Power()noexcept:status(),fault_counts(),disabled(){}
     Power::Power(const Power& source)noexcept{
 #define COPY(NAME) NAME = source.NAME
@@ -181,7 +190,13 @@ namespace hel{
             instance.second.unlock();
         }
 
-        tDisable readDisable(tRioStatusCode* /*status*/){
+	void writeBrownoutVoltage250mV(uint8_t v, tRioStatusCode* /*status*/) {
+            auto instance = RoboRIOManager::getInstance();
+	    instance.first->power.writeBrownoutVoltage250mV(v);
+	    instance.second.unlock();
+	}
+
+	tDisable readDisable(tRioStatusCode* /*status*/){
             auto instance = RoboRIOManager::getInstance();
             instance.second.unlock();
             return instance.first->power.getDisabled();
@@ -204,6 +219,13 @@ namespace hel{
             instance.second.unlock();
             return instance.first->power.getDisabled().User6V;
         }
+
+	uint8_t readBrownoutVoltage250mV(tRioStatusCode* /*status*/) {
+            auto instance = RoboRIOManager::getInstance();
+	    instance.second.unlock();
+	    return instance.first->power.readBrownoutVoltage250mV();
+	}
+
     };
 }
 

@@ -41,5 +41,11 @@ namespace hel{
     void SystemInterface::getDmaDescriptor(int /*dmaChannelDescriptorIndex*/, tDMAChannelDescriptor* /*desc*/){
         hel::warnUnsupportedFeature("Function call tSystem::getDmaDescriptor");
     }
+
+    const char* SystemInterface::getFPGAFileName() {
+        return "synthesis";
+    }
+
 }
+
 

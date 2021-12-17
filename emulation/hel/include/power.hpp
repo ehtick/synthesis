@@ -31,6 +31,9 @@ namespace hel{
 
         nFPGA::nRoboRIO_FPGANamespace::tPower::tDisable disabled;
 
+	uint8_t brownout_voltage_250mv;
+
+
     public:
         /**
          * \fn nFPGA::nRoboRIO_FPGANamespace::tPower::tStatus getStatus()const noexcept
@@ -79,6 +82,10 @@ namespace hel{
          */
 
         void setDisabled(nFPGA::nRoboRIO_FPGANamespace::tPower::tDisable)noexcept;
+
+	uint8_t readBrownoutVoltage250mV() noexcept;	
+
+	void writeBrownoutVoltage250mV(uint8_t) noexcept;
 
         /**
          * Constructor for Power
