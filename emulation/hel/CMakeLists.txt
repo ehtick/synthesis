@@ -91,8 +91,8 @@ if(CMAKE_BUILD_TYPE MATCHES "^MINSIZEREL$")
 endif()
 
 if(NOT X86)
-  SET(CMAKE_C_COMPILER arm-frc2021-linux-gnueabi-gcc)
-  SET(CMAKE_CXX_COMPILER arm-frc2021-linux-gnueabi-g++)
+  SET(CMAKE_C_COMPILER arm-frc2022-linux-gnueabi-gcc)
+  SET(CMAKE_CXX_COMPILER arm-frc2022-linux-gnueabi-g++)
 
   ExternalProject_ADD(grpc
     PREFIX lib/grpc
@@ -100,7 +100,7 @@ if(NOT X86)
     GIT_TAG ${GRPC_VERSION}
     GIT_SHALLOW 1
     CONFIGURE_COMMAND ""
-    BUILD_COMMAND TOOLCHAIN=arm-frc2021-linux-gnueabi- ${SCRIPTS_DIR}/check_if_built.sh GRPC ${GRPC_DIR} "${GRPC_DIR}/libs/opt/protobuf/libprotobuf.a ${GRPC_DIR}/libs/opt/libgrpc.a ${GRPC_DIR}/libs/opt/libgrpc++.a" " ${SCRIPTS_DIR}/build_grpc.sh ${GRPC_DIR}"
+    BUILD_COMMAND TOOLCHAIN=arm-frc2022-linux-gnueabi- ${SCRIPTS_DIR}/check_if_built.sh GRPC ${GRPC_DIR} "${GRPC_DIR}/libs/opt/protobuf/libprotobuf.a ${GRPC_DIR}/libs/opt/libgrpc.a ${GRPC_DIR}/libs/opt/libgrpc++.a" " ${SCRIPTS_DIR}/build_grpc.sh ${GRPC_DIR}"
     INSTALL_COMMAND "")
 
   LINK_DIRECTORIES(
