@@ -2,8 +2,8 @@
 
 FROM ubuntu:18.04 AS builder
 
-ENV WPILIB_VERSION v2021.2.2
-ENV SYNTHESIS_BRANCH wpilib-2021
+ENV WPILIB_VERSION v2022.1.1
+ENV SYNTHESIS_BRANCH emu2022
 ENV TEMPPATH /temp
 ENV PATH $TEMPPATH/bin:$PATH
 
@@ -29,7 +29,8 @@ RUN apt-get install -y --no-install-recommends \
     cmake \
     curl \
     unzip \
-    patch
+    patch \
+    ant
 
 # Build and install protobuf
 RUN cd /root && \
@@ -42,6 +43,16 @@ RUN cd /root && \
     make check && \
     make install && \
     ldconfig
+
+RUN cd /root && \
+    git clone https://github.com/opencv/opencv --branch 4.5.5 --depth=1 && \
+    cd opencv && \
+    mkdir -p build && cd build && \
+    cmake .. -DBUILD_JAVA=On -DBUILD_opencv_java=On -DBUILD_opencv_java_bindings_generator=On&& \
+    make -j12 && make opencv_java && \
+    make install && \
+    cp bin/opencv-455.jar /usr/share/java/opencv.jar && \
+    cp lib/libopencv_java455.so /usr/local/lib
 
 # Build Synthesis
 RUN mkdir -p $TEMPPATH/src/github.com/autodesk && \ 
@@ -78,18 +89,17 @@ RUN ${ENTER_HEL}/../java_vm/wpi_cross/allwpilib && \
     cp hal/src/main/native/include/* wpilibOldCommands/src/main/native/include -r -f && \
     cp wpimath/src/main/native/include/* wpilibOldCommands/src/main/native/include -r -f && \
     cp hal/build/generated/headers/* wpilibOldCommands/src/main/native/include -r -f && \
-    ./gradlew wpilibOldCommandsBaseLinuxx86-64DebugSharedLibrary
-RUN ${ENTER_HEL}/../java_vm/wpi_cross/allwpilib && \
-cp wpilibc/src/main/native/include/frc wpilibNewCommands/src/main/native/include -r -f && \
+    cp wpilibc/src/main/native/include/frc wpilibNewCommands/src/main/native/include -r -f && \
     cp wpilibc/src/main/native/include/frc2 wpilibNewCommands/src/main/native/include -r -f && \
     cp wpiutil/src/main/native/include/wpi wpilibNewCommands/src/main/native/include -r -f && \
     cp ntcore/src/main/native/include/* wpilibNewCommands/src/main/native/include -r -f && \
     cp hal/src/main/native/include/* wpilibNewCommands/src/main/native/include -r -f && \
     cp wpimath/src/main/native/include/* wpilibNewCommands/src/main/native/include -r -f && \
     cp wpimath/src/main/native/eigeninclude/Eigen wpilibNewCommands/src/main/native/include -r -f && \
-    cp hal/build/generated/headers/* wpilibNewCommands/src/main/native/include -r -f && \
-    ./gradlew wpilibNewCommandsBaseLinuxx86-64DebugSharedLibrary
-
+    cp hal/build/generated/headers/* wpilibNewCommands/src/main/native/include -r -f && \   
+    mkdir -p build && cd build && \
+    cmake .. -DOPENCV_JAR_FILE=/usr/share/java/opencv.jar -DWITH_OLD_COMMANDS=On && \
+    make -j12
 
 # Move needed files into one location
 RUN mkdir $TEMPPATH/to_copy && \
@@ -182,4 +192,3 @@ RUN rm -rf /var/lib/apt/lists/*
 
 CMD /usr/sbin/sshd && \
     while true; do echo ""; done
-
