@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -10,6 +10,8 @@ using Mirabuf;
 using Mirabuf.Joint;
 using Mirabuf.Material;
 using Mirabuf.Signal;
+using Synthesis;
+using Synthesis.Physics;
 using SynthesisAPI.Proto;
 using SynthesisAPI.Simulation;
 using SynthesisAPI.Utilities;
@@ -82,6 +84,9 @@ namespace Synthesis.Import
 			// Uncommenting this will delete all bodies so the JSON file isn't huge
 			//DebugAssembly(assembly);
 
+			// TODO: Move this to be more generalized
+			
+
 			GameObject assemblyObject = new GameObject(assembly.Info.Name);
 			var parts = assembly.Data.Parts;
 			MakeGlobalTransformations(assembly);
@@ -102,6 +107,19 @@ namespace Synthesis.Import
 
 				#region Parts
 
+				int uniqueParts = 0;
+				{
+					HashSet<string> temp = new HashSet<string>();
+					group.Parts.ForEach(x => {
+						if (!temp.Contains(x.Value.Info.GUID)) {
+							temp.Add(x.Value.Info.GUID);
+							uniqueParts++;
+						}
+					});
+				}
+
+				BtCompoundShape groupShape = BtCompoundShape.Create(uniqueParts);
+
 				foreach (var part in group.Parts)
 				{
 					if (!partObjects.ContainsKey(part.Value.Info.GUID))
@@ -109,7 +127,7 @@ namespace Synthesis.Import
 						var partInstance = part.Value;
 						var partDefinition = parts.PartDefinitions[partInstance.PartDefinitionReference];
 						GameObject partObject = new GameObject(partInstance.Info.Name);
-						MakePartDefinition(partObject, partDefinition, partInstance, assembly.Data);
+						MakePartDefinition(partObject, partDefinition, partInstance, assembly.Data, groupShape);
 						partObjects.Add(partInstance.Info.GUID, partObject);
 						partObject.transform.parent = groupObject.transform;
 						// MARK: If transform changes do work recursively, apply transformations here instead of in a separate loop
@@ -126,9 +144,16 @@ namespace Synthesis.Import
 
 				// Combine all physical data for grouping
 				var combPhysProps = CombinePhysicalProperties(collectivePhysData);
-				var rb = groupObject.AddComponent<Rigidbody>();
-				rb.mass = (float) combPhysProps.Mass;
-				totalMass += rb.mass;
+
+				// var rb = groupObject.AddComponent<Rigidbody>();
+				// rb.mass = (float) combPhysProps.Mass;
+				var rb = BtRigidBody.Create(groupShape, (float)combPhysProps.Mass);
+				rb.ActivationState = BtActivationState.DISABLE_DEACTIVATION;
+				rb.Damping = (0.8f, 0f);
+				var rep = groupObject.AddComponent<BulletPuppet>();
+				rep.BulletRep = rb;
+
+				totalMass += (float)combPhysProps.Mass;
 				//rb.centerOfMass = combPhysProps.Com; // I actually don't need to flip this
 				groupObject.transform.parent = assemblyObject.transform;
 				groupObjects.Add(group.GUID, groupObject);
@@ -155,26 +180,26 @@ namespace Synthesis.Import
 				UnityEngine.Object.Destroy(assemblyObject);
 			}
 
-			foreach (var jointKvp in assembly.Data.Joints.JointInstances)
-			{
-				if (jointKvp.Key == "grounded")
-					continue;
+			// foreach (var jointKvp in assembly.Data.Joints.JointInstances)
+			// {
+			// 	if (jointKvp.Key == "grounded")
+			// 		continue;
 
-				Debug.Log($"Joint Key: {jointKvp.Key}");
-				var a = groupObjects[jointKvp.Key];
-				Debug.Log($"Child: {jointKvp.Value.ChildPart}");
-				var bKey = rigidDefinitions.partToDefinitionMap[jointKvp.Value.ChildPart];
-				var b = groupObjects[bKey];
+			// 	Debug.Log($"Joint Key: {jointKvp.Key}");
+			// 	var a = groupObjects[jointKvp.Key];
+			// 	Debug.Log($"Child: {jointKvp.Value.ChildPart}");
+			// 	var bKey = rigidDefinitions.partToDefinitionMap[jointKvp.Value.ChildPart];
+			// 	var b = groupObjects[bKey];
 
-				MakeJoint(
-					a,
-					b,
-					jointKvp.Value,
-					totalMass,
-					assembly,
-					simObject
-				);
-			}
+			// 	MakeJoint(
+			// 		a,
+			// 		b,
+			// 		jointKvp.Value,
+			// 		totalMass,
+			// 		assembly,
+			// 		simObject
+			// 	);
+			// }
 
 
 			for (var i = 0; i < _collidersToIgnore.Count - 1; i++)
@@ -257,15 +282,20 @@ namespace Synthesis.Import
 		}
 
 		public static void MakePartDefinition(GameObject container, PartDefinition definition, PartInstance instance,
-			AssemblyData assemblyData)
+			AssemblyData assemblyData, BtCompoundShape compoundShape)
 		{
 			PhysicMaterial physMat = new PhysicMaterial
 			{
 				dynamicFriction = 0.6f, // definition.PhysicalData.,
 				staticFriction = 0.6f // definition.PhysicalData.Friction
 			};
+
+
+
+			int bodyCount = 0;
 			foreach (var body in definition.Bodies)
 			{
+				bodyCount++;
 				var bodyObject = new GameObject(body.Info.Name);
 				var filter = bodyObject.AddComponent<MeshFilter>();
 				var renderer = bodyObject.AddComponent<MeshRenderer>();
@@ -275,11 +305,54 @@ namespace Synthesis.Import
 					: assemblyData.Materials.Appearances.ContainsKey(instance.Appearance)
 						? assemblyData.Materials.Appearances[instance.Appearance].UnityMaterial
 						: Appearance.DefaultAppearance.UnityMaterial; // Setup the override
-				var collider = bodyObject.AddComponent<MeshCollider>();
-				collider.convex = true;
-				collider.sharedMesh = body.TriangleMesh.UnityMesh; // Again, not sure if this actually works
-				collider.material = physMat;
-				_collidersToIgnore.Add(collider);
+				
+				// var collider = bodyObject.AddComponent<MeshCollider>();
+				// collider.convex = true;
+				// collider.sharedMesh = body.TriangleMesh.UnityMesh; // Again, not sure if this actually works
+				// collider.material = physMat;
+				BtVec3[] btVerts = new BtVec3[body.TriangleMesh.UnityVertices.Length];
+				for (int i = 0; i < body.TriangleMesh.UnityVertices.Length; i++) {
+					btVerts[i] = new BtVec3 {
+						x = body.TriangleMesh.UnityVertices[i].x,
+						y = body.TriangleMesh.UnityVertices[i].y,
+						z = body.TriangleMesh.UnityVertices[i].z
+					};
+				}
+
+				try {
+
+					var debugBody = new Body();
+					debugBody.MergeFrom(body);
+					Logger.Log(instance.Info.Name.Replace(':', '_'));
+					string directory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
+						+ $"{Path.AltDirectorySeparatorChar}SynthDump{Path.AltDirectorySeparatorChar}";
+					if (!Directory.Exists(directory)) {
+						Directory.CreateDirectory(directory);
+					}
+					string file = $"{directory}{Path.AltDirectorySeparatorChar}LastPart.json";
+					string metaFile = $"{directory}{Path.AltDirectorySeparatorChar}{body.GetHashCode()}.text";
+					if (File.Exists(file))
+						File.Delete(file);
+					var jFormatter = new JsonFormatter(JsonFormatter.Settings.Default);
+					File.WriteAllText(
+						file,
+						jFormatter.Format(debugBody));
+					File.WriteAllText(metaFile, $"{instance.Info.Name}\n{body.GetHashCode()}");
+
+					var collider = BtConvexShape.Create(btVerts);
+					// TODO: Collider properties (Friction and stuff)
+					compoundShape.AddShape(collider,
+						instance.GlobalTransform.UnityMatrix.GetPosition().ToBullet(),
+						instance.GlobalTransform.UnityMatrix.rotation.ToBullet()
+					);
+
+					File.Delete(metaFile);
+				} catch (Exception e) {
+					Logger.Log(e.Message, LogLevel.Error);
+				}
+
+				// _collidersToIgnore.Add(collider);
+				
 				bodyObject.transform.parent = container.transform;
 				// Ensure all transformations are zeroed after assigning parent
 				bodyObject.transform.localPosition = UVector3.zero;

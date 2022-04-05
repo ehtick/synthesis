@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Synthesis.Physics;
 using UnityEngine;
 
 using UVector3 = UnityEngine.Vector3;
@@ -59,4 +60,9 @@ public static class UtilExtensions {
     
     public static UVector3 GetPosition(this Matrix4x4 m)
         => new UVector3(m.m03 * -0.01f, m.m13 * 0.01f, m.m23 * 0.01f);
+
+    public static BtVec3 ToBullet(this Vector3 v) => new BtVec3 { x = v.x, y = v.y, z = v.z };
+    public static Vector3 ToUnity(this BtVec3 v) => new Vector3(v.x, v.y, v.z);
+    public static BtQuat ToBullet(this Quaternion q) => new BtQuat { x = q.x, y = q.y, z = q.z, w = q.w };
+    public static Quaternion ToUnity(this BtQuat q) => new Quaternion(q.x, q.y, q.z, q.w);
 }

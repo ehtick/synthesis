@@ -27,5 +27,18 @@ namespace Mirabuf {
                 return _unityMesh;
             }
         }
+
+        private UVector3[] _unityVertices = null;
+        public UVector3[] UnityVertices {
+            get {
+                if (MeshTypeCase != MeshTypeOneofCase.Mesh)
+                    return null;
+
+                if (_unityVertices == null) {
+                    _unityVertices = this.Mesh.Verts.ToVector3Array();
+                }
+                return _unityVertices;
+            }
+        }
     }
 }

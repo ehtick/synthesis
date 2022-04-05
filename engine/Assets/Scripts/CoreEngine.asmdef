@@ -21,7 +21,8 @@
         "System.Runtime.CompilerServices.Unsafe.dll",
         "nunit.framework.dll",
         "System.IO.Compression.ZipFile",
-        "DotNetZip.dll"
+        "DotNetZip.dll",
+        "BulletSharp.dll"
     ],
     "autoReferenced": true,
     "defineConstraints": [],

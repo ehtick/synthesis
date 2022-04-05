@@ -1,0 +1,10 @@
+^C:\USERS\HUNTE\GIT\SYNTHESIS\ENGINE\BULLET\BULLETSYNTHESIS\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/hunte/git/synthesis/engine/Bullet/BulletSynthesis -BC:/Users/hunte/git/synthesis/engine/Bullet/BulletSynthesis --check-stamp-file C:/Users/hunte/git/synthesis/engine/Bullet/BulletSynthesis/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

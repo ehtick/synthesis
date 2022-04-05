@@ -4,8 +4,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 
+using Synthesis.Physics;
+
 namespace Synthesis.Util {
     public static class SynthesisUtil {
+
+        public static BtVec3 ToBullet(float x, float y, float z) => new BtVec3 { x = x, y = y, z = z };
+        public static BtQuat ToBullet(float x, float y, float z, float w) => new BtQuat { x = x, y = y, z = z, w = w };
 
         public static void ForEach<T>(this IEnumerable<T> e, Action<T> a) {
             foreach (var i in e) {

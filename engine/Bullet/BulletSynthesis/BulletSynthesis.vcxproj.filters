@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\hunte\git\synthesis\engine\Bullet\BulletSynthesis\src\NativeExport.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\hunte\git\synthesis\engine\Bullet\BulletSynthesis\src\PhysicsManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\hunte\git\synthesis\engine\Bullet\BulletSynthesis\src\PhysicsManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\hunte\git\synthesis\engine\Bullet\BulletSynthesis\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{2DC21B76-8565-34D1-B9F7-04AF3D4AED32}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{D44FC018-1E06-335D-A3BF-CE2535C60453}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
