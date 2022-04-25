@@ -51,9 +51,10 @@ def _MapAllComponents(
                 part_body.part = comp_ref
                 _ParseBRep(body, options, part_body.triangle_mesh)
 
+                appearance_key = "{}_{}".format(body.appearance.name, body.appearance.id)
                 # this should be appearance
-                if body.appearance.id in materials.appearances:
-                    part_body.appearance_override = body.appearance.id
+                if appearance_key in materials.appearances:
+                    part_body.appearance_override = appearance_key
                 else:
                     part_body.appearance_override = "default"
 
@@ -128,7 +129,7 @@ def __parseChildOccurrence(
     fill_info(part, occurrence)
 
     if occurrence.appearance:
-        part.appearance = occurrence.appearance.id
+        part.appearance = "{}_{}".format(occurrence.appearance.name, occurrence.appearance.id)
         # TODO: Add phyical_material parser
 
     if occurrence.component.material:
