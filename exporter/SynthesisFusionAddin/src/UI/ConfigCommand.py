@@ -157,6 +157,9 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             previous = None
             saved = Helper.previouslyConfigured()
 
+            global compress
+            compress = False
+
             if type(saved) == str:
                 try:
                     # probably need some way to validate for each usage below
