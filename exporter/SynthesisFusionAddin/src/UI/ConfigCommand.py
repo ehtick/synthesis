@@ -3,7 +3,6 @@
 """
 
 from enum import Enum
-from typing import Type
 from ..general_imports import *
 from ..configure import NOTIFIED, write_configuration
 from ..Analytics.alert import showAnalyticsAlert
@@ -38,6 +37,8 @@ These lists are crucial, and contain all of the relevent object selections.
 WheelListGlobal = []
 JointListGlobal = []
 GamepieceListGlobal = []
+
+compress = False
 
 def GUID(arg):
     """### Will return command object when given a string GUID, or the string GUID of an object (depending on arg value)
@@ -695,6 +696,16 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 enabled=True,
             )
 
+            self.createBooleanInput(
+                "compress",
+                "Compress Output",
+                exporter_settings,
+                checked=False,
+                tooltip="Compress the output file for a smaller file size.",
+                tooltipadvanced="<hr>Use the GZIP compression system to compress the resulting file which will be opened in the simulator, perfect if you want to share the file.<br>",
+                enabled=True
+            )
+
             self.createBooleanInput( # open synthesis checkbox
                 "open_synthesis",
                 "Open Synthesis",
@@ -1237,6 +1248,8 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
                 elif dropdownExportMode.selectedItem.index == 1:
                     _mode = Mode.SynthesisField
 
+                global compress
+
                 options = ParseOptions(
                     savepath,
                     name,
@@ -1246,7 +1259,8 @@ class ConfigureCommandExecuteHandler(adsk.core.CommandEventHandler):
                     wheels=_exportWheels,
                     gamepieces=_exportGamepieces,
                     weight=_robotWeight,
-                    mode=_mode
+                    mode=_mode,
+                    compress=compress
                 )
 
                 if options.parse(False):
@@ -1283,7 +1297,7 @@ class CommandExecutePreviewHandler(adsk.core.CommandEventHandler):
         """
         try:
             eventArgs = adsk.core.CommandEventArgs.cast(args)
-            inputs = eventArgs.command.commandInputs # equivalent to INPUTS_ROOT global
+            # inputs = eventArgs.command.commandInputs # equivalent to INPUTS_ROOT global
 
             auto_calc_weight_f = INPUTS_ROOT.itemById("auto_calc_weight_f")
 
@@ -1479,15 +1493,14 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
             args (SelectionEventArgs): A selection event argument
         """
         try:
-            eventArgs = adsk.core.SelectionEventArgs.cast(args)
+            # eventArgs = adsk.core.SelectionEventArgs.cast(args)
 
             self.selectedOcc = adsk.fusion.Occurrence.cast(args.selection.entity)
             self.selectedJoint = adsk.fusion.Joint.cast(args.selection.entity)
 
             dropdownExportMode = INPUTS_ROOT.itemById("mode")
             duplicateSelection = INPUTS_ROOT.itemById("duplicate_selection")
-            indicator = INPUTS_ROOT.itemById("algorithmic_indicator")
-            
+            #indicator = INPUTS_ROOT.itemById("algorithmic_indicator")
 
             if self.selectedOcc:
                 if dropdownExportMode.selectedItem.index == 0:
@@ -2052,7 +2065,11 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
                                 physical.mass, 2
                             )
                             weightInput.value = value
-
+            elif cmdInput.id == "compress":
+                checkBox = adsk.core.BoolValueCommandInput.cast(cmdInput)
+                if checkBox.value:
+                    global compress
+                    compress = checkBox.value
             elif cmdInput.id == "algorithmic_selection":
                 checkBox = adsk.core.BoolValueCommandInput.cast(cmdInput)
                 onSelect.algorithmicSelection = checkBox.value
@@ -2102,7 +2119,7 @@ class MyKeyDownHandler(adsk.core.KeyboardEventHandler):
         onSelect = gm.handlers[3]
         algorithmicSelection = INPUTS_ROOT.itemById("algorithmic_selection")
         indicator = INPUTS_ROOT.itemById("algorithmic_indicator")
-        wheelAddButton = INPUTS_ROOT.itemById("wheel_add")
+        # wheelAddButton = INPUTS_ROOT.itemById("wheel_add")
         
         #if wheelAddButton.isEnabled:
         #    return
@@ -2150,7 +2167,7 @@ class MyKeyUpHandler(adsk.core.KeyboardEventHandler):
         onSelect = gm.handlers[3]
         algorithmicSelection = INPUTS_ROOT.itemById("algorithmic_selection")
         indicator = INPUTS_ROOT.itemById("algorithmic_indicator")
-        wheelAddButton = INPUTS_ROOT.itemById("wheel_add")
+        # wheelAddButton = INPUTS_ROOT.itemById("wheel_add")
         
         #if wheelAddButton.isEnabled:
         #    return
