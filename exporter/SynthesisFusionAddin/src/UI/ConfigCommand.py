@@ -215,14 +215,14 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 "Export Mode",
                 dropDownStyle=adsk.core.DropDownStyles.LabeledIconDropDownStyle,
             )
-            dropdownExportMode.listItems.add("Robot", True)
-            dropdownExportMode.listItems.add("Field", False)
+            dropdownExportMode.listItems.add("Dynamic", True)
+            dropdownExportMode.listItems.add("Static", False)
 
             dropdownExportMode.tooltip = (
                 "Export Mode"
             )
             dropdownExportMode.tooltipDescription = (
-                "<hr>The type of model to be exported."
+                "<hr>Does this object move dynamically?"
             )
 
             
