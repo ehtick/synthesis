@@ -323,15 +323,15 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 "wheel_delete", "Remove", False
             )
 
-            addWheelInput.tooltip = "Add a wheel component" # tooltips
-            removeWheelInput.tooltip = "Remove a wheel component"
+            addWheelInput.tooltip = "Add a wheel joint" # tooltips
+            removeWheelInput.tooltip = "Remove a wheel joint"
 
             wheelSelectInput = wheel_inputs.addSelectionInput(
                 "wheel_select",
                 "Selection",
-                "Select the wheels in your drive-train assembly.",
+                "Select the wheels joints in your drive-train assembly.",
             )
-            wheelSelectInput.addSelectionFilter("Occurrences") # filter selection to only occurrences
+            wheelSelectInput.addSelectionFilter("Joints") # filter selection to only occurrences
 
             wheelSelectInput.setSelectionLimits(0) # no selection count limit
             wheelSelectInput.isEnabled = False
@@ -342,6 +342,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
 
             """
             Algorithmic Wheel Selection Indicator
+            """
             """
             algorithmicIndicator = self.createTextBoxInput( # wheel type header
                     "algorithmic_indicator",
@@ -371,11 +372,11 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 0,
                 0,
             )
-            
+            """
             
             wheelTableInput.addCommandInput( # create textbox input using helper (component name)
                 self.createTextBoxInput(
-                    "name_header", "Name", wheel_inputs, "Component name", bold=False
+                    "name_header", "Name", wheel_inputs, "Joint name", bold=False
                 ),
                 0,
                 1,
@@ -411,16 +412,16 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             Select duplicates?
                 - creates a BoolValueCommandInput
             """
-            self.createBooleanInput( # create bool value command input using helper
-                "duplicate_selection",
-                "Select Duplicates",
-                wheel_inputs,
-                checked=True,
-                tooltip="Select duplicate wheel components.",
-                tooltipadvanced="""<hr>When this is checked, all duplicate occurrences will be automatically selected.
-                <br>This feature may fail when duplicates are not direct copies.</br>""", # advanced tooltip
-                enabled=True,
-            )
+            # self.createBooleanInput( # create bool value command input using helper
+            #     "duplicate_selection",
+            #     "Select Duplicates",
+            #     wheel_inputs,
+            #     checked=True,
+            #     tooltip="Select duplicate wheel components.",
+            #     tooltipadvanced="""<hr>When this is checked, all duplicate occurrences will be automatically selected.
+            #     <br>This feature may fail when duplicates are not direct copies.</br>""", # advanced tooltip
+            #     enabled=True,
+            # )
 
 
             # ~~~~~~~~~~~~~~~~ JOINT CONFIGURATION ~~~~~~~~~~~~~~~~
@@ -1335,9 +1336,9 @@ class CommandExecutePreviewHandler(adsk.core.CommandEventHandler):
                 auto_calc_weight_f.isEnabled = True
 
             if not addWheelInput.isEnabled or not removeWheelInput:
-                for wheel in WheelListGlobal:
-                    wheel.component.opacity = 0.25
-                    CustomGraphics.createTextGraphics(wheel, WheelListGlobal)
+                # for wheel in WheelListGlobal:
+                #     wheel.component.opacity = 0.25
+                #     CustomGraphics.createTextGraphics(wheel, WheelListGlobal)
 
                 gm.app.activeViewport.refresh()
             else:
@@ -1378,6 +1379,7 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
 
     Args: SelectionEventHandler
     """
+    lastInputCmd = None
     def __init__(self, cmd):
         super().__init__()
         self.cmd = cmd
@@ -1490,7 +1492,7 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
             #gm.ui.messageBox("Selection's component has no referenced joints.\nReturning selection.\n\n" + "Occurrence:\n--> " + occ.name + "\nJoint:\n--> NONE")
             return [None, occ]
     
-    def notify(self, args):
+    def notify(self, args: adsk.core.SelectionEventArgs):
         """### Notify member is called when a selection event is triggered.
 
         Args:
@@ -1507,36 +1509,7 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
             #indicator = INPUTS_ROOT.itemById("algorithmic_indicator")
 
             if self.selectedOcc:
-                if dropdownExportMode.selectedItem.index == 0:
-                    wheelParent = None
-
-                    #gm.ui.messageBox(str(self.algorithmicSelection))
-                    
-                    if self.algorithmicSelection:
-                        returned = self.wheelParent(self.selectedOcc)
-                        wheelParent = returned[1]
-                    else:
-                        wheelParent = self.selectedOcc
-                    
-                    occurrenceList = (
-                        gm.app.activeDocument.design.rootComponent.allOccurrencesByComponent(
-                            wheelParent.component
-                        )
-                    )
-
-                    if duplicateSelection.value:
-                        for occ in occurrenceList:
-                            if occ not in WheelListGlobal:
-                                addWheelToTable(occ)
-                            else:
-                                removeWheelFromTable(WheelListGlobal.index(occ))
-                    else:
-                        if wheelParent not in WheelListGlobal:
-                            addWheelToTable(wheelParent)
-                        else:
-                            removeWheelFromTable(WheelListGlobal.index(wheelParent))
-
-                elif dropdownExportMode.selectedItem.index == 1:
+                if dropdownExportMode.selectedItem.index == 1:
                     occurrenceList = (
                         gm.app.activeDocument.design.rootComponent.allOccurrencesByComponent(
                             self.selectedOcc.component
@@ -1554,11 +1527,16 @@ class MySelectHandler(adsk.core.SelectionEventHandler):
                     jointType == JointMotions.REVOLUTE.value
                     or jointType == JointMotions.SLIDER.value
                 ):
-
-                    if self.selectedJoint not in JointListGlobal:
-                        addJointToTable(self.selectedJoint)
+                    if (jointType == JointMotions.REVOLUTE.value and MySelectHandler.lastInputCmd.id == "wheel_add"):
+                        addWheelToTable(self.selectedJoint)
+                    elif (jointType == JointMotions.REVOLUTE.value and MySelectHandler.lastInputCmd.id == "wheel_remove"):
+                        if self.selectedJoint in WheelListGlobal:
+                            removeWheelFromTable(WheelListGlobal.index(self.selectedJoint))
                     else:
-                        removeJointFromTable(self.selectedJoint)
+                        if self.selectedJoint not in JointListGlobal:
+                            addJointToTable(self.selectedJoint)
+                        else:
+                            removeJointFromTable(self.selectedJoint)
         except:
             if gm.ui:
                 gm.ui.messageBox('Failed:\n{}'.format(traceback.format_exc())) 
@@ -1722,6 +1700,7 @@ class ConfigureCommandInputChanged(adsk.core.InputChangedEventHandler):
         try:
             eventArgs = adsk.core.InputChangedEventArgs.cast(args)
             cmdInput = eventArgs.input
+            MySelectHandler.lastInputCmd = cmdInput
             inputs = cmdInput.commandInputs
             onSelect = gm.handlers[3]
 
@@ -2344,7 +2323,7 @@ def addJointToTable(joint: adsk.fusion.Joint) -> None:
         "Failed:\n{}".format(traceback.format_exc())
     )
 
-def addWheelToTable(wheel: adsk.fusion.Occurrence) -> None:
+def addWheelToTable(wheel: adsk.fusion.Joint) -> None:
     """### Adds a wheel occurrence to its global list and wheel table.
 
     Args:
@@ -2353,17 +2332,17 @@ def addWheelToTable(wheel: adsk.fusion.Occurrence) -> None:
     try:
         onSelect = gm.handlers[3]
         wheelTableInput = wheelTable()
-        def addPreselections(child_occurrences):
-            for occ in child_occurrences:
-                onSelect.allWheelPreselections.append(occ.entityToken)
+        # def addPreselections(child_occurrences):
+        #     for occ in child_occurrences:
+        #         onSelect.allWheelPreselections.append(occ.entityToken)
 
-                if occ.childOccurrences:
-                    addPreselections(occ.childOccurrences)
+        #         if occ.childOccurrences:
+        #             addPreselections(occ.childOccurrences)
 
-        if wheel.childOccurrences:    
-            addPreselections(wheel.childOccurrences)
-        else:
-            onSelect.allWheelPreselections.append(wheel.entityToken)
+        # if wheel.childOccurrences:    
+        #     addPreselections(wheel.childOccurrences)
+        # else:
+        onSelect.allWheelPreselections.append(wheel.entityToken)
 
         WheelListGlobal.append(wheel)
         cmdInputs = adsk.core.CommandInputs.cast(wheelTableInput.commandInputs)
@@ -2373,7 +2352,7 @@ def addWheelToTable(wheel: adsk.fusion.Occurrence) -> None:
         )
 
         name = cmdInputs.addTextBoxCommandInput(
-            "name_w", "Occurrence name", wheel.name, 1, True
+            "name_w", "Joint name", wheel.name, 1, True
         )
         name.tooltip = wheel.name
 
@@ -2497,7 +2476,7 @@ def addGamepieceToTable(gamepiece: adsk.fusion.Occurrence) -> None:
     )
 
 def removeWheelFromTable(index: int) -> None:
-    """### Removes a wheel occurrence from its global list and wheel table.
+    """### Removes a wheel joint from its global list and wheel table.
 
     Args:
         index (int): index of wheel item in its global list
@@ -2507,17 +2486,17 @@ def removeWheelFromTable(index: int) -> None:
         wheelTableInput = wheelTable()
         wheel = WheelListGlobal[index]
 
-        def removePreselections(child_occurrences):
-            for occ in child_occurrences:
-                onSelect.allWheelPreselections.remove(occ.entityToken)
+        # def removePreselections(child_occurrences):
+        #     for occ in child_occurrences:
+        #         onSelect.allWheelPreselections.remove(occ.entityToken)
 
-                if occ.childOccurrences:
-                    removePreselections(occ.childOccurrences)
+        #         if occ.childOccurrences:
+        #             removePreselections(occ.childOccurrences)
 
-        if wheel.childOccurrences:
-            removePreselections(wheel.childOccurrences)
-        else:
-            onSelect.allWheelPreselections.remove(wheel.entityToken)
+        # if wheel.childOccurrences:
+        #     removePreselections(wheel.childOccurrences)
+        # else:
+        onSelect.allWheelPreselections.remove(wheel.entityToken)
 
         del WheelListGlobal[index]
         wheelTableInput.deleteRow(index + 1)
