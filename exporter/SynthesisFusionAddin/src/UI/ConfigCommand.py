@@ -38,7 +38,8 @@ WheelListGlobal = []
 JointListGlobal = []
 GamepieceListGlobal = []
 
-compress = False
+# Default to compressed files
+compress = True
 
 def GUID(arg):
     """### Will return command object when given a string GUID, or the string GUID of an object (depending on arg value)
@@ -158,7 +159,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             saved = Helper.previouslyConfigured()
 
             global compress
-            compress = False
+            compress = True
 
             if type(saved) == str:
                 try:
@@ -703,7 +704,7 @@ class ConfigureCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 "compress",
                 "Compress Output",
                 exporter_settings,
-                checked=False,
+                checked=compress,
                 tooltip="Compress the output file for a smaller file size.",
                 tooltipadvanced="<hr>Use the GZIP compression system to compress the resulting file which will be opened in the simulator, perfect if you want to share the file.<br>",
                 enabled=True
