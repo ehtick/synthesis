@@ -37,6 +37,9 @@ namespace Synthesis.Configuration
         private Transform arrowY;
         private Transform arrowZ;
 
+
+        private float startRotation;
+
         //To use: move gizmo as a child of the object you want to move in game
         //Press R to reset rotation
         //Press CTRL to snap to nearest configured multiple when moving
@@ -74,14 +77,17 @@ namespace Synthesis.Configuration
                     case ArrowType.X:
                     case ArrowType.YZ:
                     case ArrowType.RX:
+                    case ArrowType.SX:
                         return transform.right;
                     case ArrowType.Y:
                     case ArrowType.XZ:
                     case ArrowType.RY:
+                    case ArrowType.SY:
                         return transform.up;
                     case ArrowType.Z:
                     case ArrowType.XY:
                     case ArrowType.RZ:
+                    case ArrowType.SZ:
                         return transform.forward;
                     default:
                         return Vector3.zero;
@@ -242,7 +248,7 @@ namespace Synthesis.Configuration
                 if (setLastArrowPoint) lastArrowPoint = currentArrowPoint; //last arrow point keeps track of where the mouse is relative to the center of the parent object
 
             }
-            else
+            else if (activeArrow <= ArrowType.RZ)//rotation
             {
                 //Project a ray from mouse
                 Ray cameraRay = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -260,8 +266,41 @@ namespace Synthesis.Configuration
                 else if (ActiveArrow == ArrowType.RX) t = parent.up;
                 else t = parent.forward;
                 parent.RotateAround(parent.position, axisPlane.normal, //defines point and axis plane
-                    -1 * RoundTo(Vector3.SignedAngle(pointToLook - parent.position, t, axisPlane.normal), //rounds degrees of rotation axis forward to mouse ray intersection
+                    -1 * RoundTo(Vector3.SignedAngle(pointToLook - parent.position, t, axisPlane.normal) - startRotation, //rounds degrees of rotation axis forward to mouse ray intersection
                     snapEnabled ? snapRotationToDegree : 0f)); //if control is pressed, snap to configurable value, otherwise, don't snap
+            }
+            else //scaling
+            {
+
+                Ray mouseRay = Camera.main.ScreenPointToRay(Input.mousePosition);
+                Vector3 currentArrowPoint;
+
+                //draws plane with the same normal as the axis arrow, which faces the camera
+                Plane axisArrowPlane = new Plane(axisArrowTransform.forward, parent.position);
+
+                //a ray from the mouse is drawn to intersect the plane
+                float rayDistance;
+                float rayLimit = Vector3.Distance(Camera.main.transform.position, gizmoCameraTransform.position) * singleMoveLimitScale;
+                if (!axisArrowPlane.Raycast(mouseRay, out rayDistance) || rayDistance > rayLimit) //limits the maximum distance the ray can be to prevent moving it to infinity
+                        rayDistance = rayLimit;
+
+                //finds nearest point on the axis line that is closest to the intersection point
+                ClosestPointsOnTwoLines(out Vector3 p, out currentArrowPoint, axisArrowPlane.ClosestPointOnPlane(mouseRay.GetPoint(rayDistance)), axisArrowTransform.right, parent.position, ArrowDirection);
+
+                bool setLastArrowPoint = true; //will be set to false if a boundry is hit
+                if (lastArrowPoint != Vector3.zero)
+                {
+                    if (snapEnabled && activeArrow <= ArrowType.Z)//snaps to configurable amount when control is held down. does this by setting current arrow point to rounded distance
+                        currentArrowPoint = LerpByDistance(lastArrowPoint, currentArrowPoint,
+                            RoundTo(Vector3.Distance(lastArrowPoint, currentArrowPoint), snapTransformToUnit));
+
+                    Vector3 projectedPosition = parent.localScale + currentArrowPoint - lastArrowPoint;
+                    setLastArrowPoint = projectedPosition.y >= floorBound;//sets movement boundries
+                    if (setLastArrowPoint)
+                        parent.localScale += currentArrowPoint - lastArrowPoint;
+                }
+                if (setLastArrowPoint) lastArrowPoint = currentArrowPoint; //last arrow point keeps track of where the mouse is relative to the center of the parent object
+
             }
 
             //allows for the parent transform to be modified multiple times without changing the parent's actual transform. It is set at the end of the Update loop.
@@ -297,11 +336,13 @@ namespace Synthesis.Configuration
             
             if (arrowType == ArrowType.P) //sets marker's plane
                 markerPlane = new Plane(Vector3.Normalize(Camera.main.transform.forward), parent.position);
-            else if (arrowType <= ArrowType.Z) //sets up axis arrows for plane creation
+            else if (arrowType <= ArrowType.Z || arrowType == ArrowType.SX) //sets up axis arrows for plane creation
             {
                 switch (arrowType)
                 {
                     case ArrowType.X:
+
+                    case ArrowType.SX:
                         axisArrowTransform = arrowX;
                         break;
                     case ArrowType.Y:
@@ -313,8 +354,32 @@ namespace Synthesis.Configuration
                 }
             }
             else if (arrowType >= ArrowType.RX) //creates plane for rotation
+            {
                 axisPlane = new Plane(ArrowDirection, parent.position);
 
+                //the following code determines the starting offset between the mouse and the gizmo.
+                //does the exact same thing as a normal rotation, but extracts the resulting angle as the initial offset
+
+                //Project a ray from mouse
+                Ray cameraRay = Camera.main.ScreenPointToRay(Input.mousePosition);
+                float rayLength;
+
+                //if mouse ray doesn't intersect plane, set default ray length
+                if (!axisPlane.Raycast(cameraRay, out rayLength)) rayLength = Vector3.Distance(Camera.main.transform.position, parent.position) * 10;
+
+                //get intersection point; if none, find closest point to default length
+                Vector3 pointToLook = axisPlane.ClosestPointOnPlane(cameraRay.GetPoint(rayLength));
+
+                //Correct parent's forward depending on rotation axis. Y-axis does not need corrections
+                Vector3 t;
+                if (ActiveArrow == ArrowType.RZ) t = parent.right;
+                else if (ActiveArrow == ArrowType.RX) t = parent.up;
+                else t = parent.forward;
+
+                //sets the starting rotational offset to the angle
+                startRotation = Vector3.SignedAngle(pointToLook - parent.position, t, axisPlane.normal);
+            }
+                
 
         }
 
